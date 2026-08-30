@@ -32,7 +32,7 @@ export const StatsDashboard: React.FC = () => {
             </div>
 
             <h3 className="text-2xl sm:text-4xl font-black uppercase tracking-tight font-display text-white">
-              Link Your Account & Unlock <span className="text-amber-400">/kit discord</span> Instantly
+              Link Your Account & Unlock <span className="text-amber-400">/kit</span> Instantly
             </h3>
 
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
@@ -52,7 +52,7 @@ export const StatsDashboard: React.FC = () => {
               </div>
               <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
                 <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Step 3</span>
-                <span className="text-xs font-bold text-white">Type /kit discord</span>
+                <span className="text-xs font-bold text-white">Type /kit</span>
               </div>
             </div>
           </div>
@@ -86,9 +86,9 @@ export const StatsDashboard: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Kit Discord Status:</span>
+                    <span className="text-muted-foreground">Kit Status:</span>
                     <span className="text-amber-300 font-bold font-mono">
-                      {user.is_linked ? "READY (/kit discord)" : "LOCKED"}
+                      {user.is_linked ? "READY (/kit)" : "LOCKED"}
                     </span>
                   </div>
 
