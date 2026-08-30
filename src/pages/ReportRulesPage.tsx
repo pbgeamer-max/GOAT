@@ -21,6 +21,8 @@ import {
   Target,
   Shield,
   Loader2,
+  X,
+  Flag,
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
@@ -33,13 +35,12 @@ export const ReportRulesPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [lookedUpPlayer, setLookedUpPlayer] = useState<any>(null);
 
-  // Form State
-  const [suspectInput, setSuspectInput] = useState("");
+  // Report Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [category, setCategory] = useState("Aimbot / Recoil Script");
   const [proofUrl, setProofUrl] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [reportSuccess, setReportSuccess] = useState(false);
 
   const categories = [
     { id: "Aimbot / Recoil Script", label: "Aimbot / Recoil Script", icon: Crosshair, color: "text-red-400" },
@@ -67,7 +68,6 @@ export const ReportRulesPage: React.FC = () => {
 
       if (data.success && data.player) {
         setLookedUpPlayer(data.player);
-        setSuspectInput(data.player.steam_id);
         showToast(`Found player: ${data.player.steam_name}`, "success");
       } else {
         showToast(data.error || "Player not found on Steam", "error");
@@ -79,14 +79,14 @@ export const ReportRulesPage: React.FC = () => {
     }
   };
 
+  const handleOpenReportModal = () => {
+    if (!lookedUpPlayer) return;
+    setIsReportModalOpen(true);
+  };
+
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const targetInput = suspectInput.trim() || searchInput.trim();
-
-    if (!targetInput) {
-      showToast("Please provide the suspect's Steam64 ID or Profile URL", "error");
-      return;
-    }
+    if (!lookedUpPlayer) return;
 
     setIsSubmitting(true);
 
@@ -95,7 +95,7 @@ export const ReportRulesPage: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          suspectInput: targetInput,
+          suspectInput: lookedUpPlayer.steam_id,
           category,
           proofUrl,
           description,
@@ -105,8 +105,8 @@ export const ReportRulesPage: React.FC = () => {
       const data = await res.json();
 
       if (data.success) {
-        setReportSuccess(true);
-        showToast("Report dispatched directly to Discord staff!", "success");
+        showToast(`Report for ${lookedUpPlayer.steam_name} sent to Discord staff!`, "success");
+        setIsReportModalOpen(false);
         setProofUrl("");
         setDescription("");
       } else {
@@ -130,56 +130,56 @@ export const ReportRulesPage: React.FC = () => {
           SERVER RULES <span className="text-red-500">&</span> REPORT CHEATER
         </h1>
         <p className="text-zinc-400 text-sm sm:text-base font-sans max-w-2xl mt-2">
-          We uphold a zero-tolerance policy against cheating, script usage, bug abuse, and toxic harassment. Search any player or submit an instant report ticket directly to staff.
+          We uphold a zero-tolerance policy against cheating, script usage, bug abuse, and toxic harassment. Search any player to inspect their live stats or report them directly to staff.
         </p>
       </div>
 
-      {/* 1:1 Atlas Rust Player Lookup & Report System Box */}
+      {/* 1:1 Atlas Rust Player Lookup Box */}
       <div className="relative rounded-3xl bg-[#090c13] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden mb-16">
         {/* Glowing backdrop spotlight */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="p-6 sm:p-10">
-          {/* Lookup Input Bar */}
+          {/* Lookup Header */}
           <div className="text-center max-w-2xl mx-auto mb-8">
             <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mx-auto mb-4 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
               <Crosshair className="w-7 h-7" />
             </div>
             <div className="font-mono text-xs text-red-400 uppercase tracking-widest font-bold mb-1">
-              GOAT HUB • PUBLIC LOOKUP & REPORT
+              GOAT HUB • PUBLIC LOOKUP
             </div>
             <h2 className="font-display font-black text-3xl sm:text-5xl text-white uppercase tracking-tight">
-              Find Any GOAT Player
+              Find any GOAT player
             </h2>
             <p className="text-zinc-400 text-xs sm:text-sm font-sans mt-2">
-              Search by Steam64 ID or paste a Steam profile URL to view stats, combat history, and file an instant report.
+              Search by Steam64 ID or paste a Steam profile URL to view stats, scrim performance, combat history, and file an instant report.
             </p>
           </div>
 
           {/* Search Form Bar */}
-          <form onSubmit={handleLookup} className="max-w-2xl mx-auto mb-10">
+          <form onSubmit={handleLookup} className="max-w-2xl mx-auto mb-8">
             <div className="relative flex items-center">
               <input
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Steam64 ID or profile URL (e.g. 76561198... or steamcommunity.com/id/...)"
+                placeholder="Steam64 ID or profile URL..."
                 className="w-full pl-5 pr-32 py-4 rounded-xl bg-black/60 border border-white/20 hover:border-white/30 focus:border-red-500 text-white placeholder-zinc-500 font-sans text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
               />
               <button
                 type="submit"
                 disabled={isSearching}
-                className="absolute right-2 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md"
+                className="absolute right-2 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
               >
                 {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                <span>{isSearching ? "Searching..." : "Search"}</span>
+                <span>{isSearching ? "Searching..." : "Search ->"}</span>
               </button>
             </div>
           </form>
 
-          {/* Player Live Lookup Result Card */}
+          {/* Player Lookup Result Card */}
           {lookedUpPlayer && (
-            <div className="max-w-3xl mx-auto mb-12 p-6 rounded-2xl bg-white/[0.03] border border-red-500/40 animate-in fade-in zoom-in-95 duration-200">
+            <div className="max-w-3xl mx-auto mb-8 p-6 rounded-2xl bg-white/[0.03] border border-red-500/40 animate-in fade-in zoom-in-95 duration-200">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-white/10">
                 <div className="flex items-center gap-4">
                   <img
@@ -206,15 +206,26 @@ export const ReportRulesPage: React.FC = () => {
                   </div>
                 </div>
 
-                <a
-                  href={`https://steamcommunity.com/profiles/${lookedUpPlayer.steam_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white font-display font-bold text-xs uppercase flex items-center gap-1.5 transition-all"
-                >
-                  <span>Steam Profile</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
-                </a>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <a
+                    href={`https://steamcommunity.com/profiles/${lookedUpPlayer.steam_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white font-display font-bold text-xs uppercase flex items-center gap-1.5 transition-all"
+                  >
+                    <span>Steam</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                  </a>
+
+                  {/* Trigger Report Modal Button */}
+                  <button
+                    onClick={handleOpenReportModal}
+                    className="atlas-btn-red px-5 py-2.5 text-white font-display font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_15px_rgba(230,32,32,0.4)] cursor-pointer"
+                  >
+                    <Flag className="w-3.5 h-3.5" />
+                    <span>REPORT PLAYER</span>
+                  </button>
+                </div>
               </div>
 
               {/* Combat Stats Grid */}
@@ -246,141 +257,6 @@ export const ReportRulesPage: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Cheater Report Submission Form */}
-          <div className="max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl bg-black/50 border border-red-500/30">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-red-500/20 text-red-400">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-display font-black text-xl text-white uppercase">
-                  Submit Direct Cheater Report
-                </h3>
-                <p className="text-zinc-400 text-xs font-sans">
-                  This report will be dispatched instantly to staff Discord via DM and private moderator logs.
-                </p>
-              </div>
-            </div>
-
-            {reportSuccess ? (
-              <div className="p-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center animate-in fade-in">
-                <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-                <h4 className="font-display font-black text-2xl text-white uppercase mb-2">
-                  Report Received!
-                </h4>
-                <p className="text-zinc-300 text-sm font-sans max-w-md mx-auto mb-6">
-                  Thank you for keeping GOAT 5X fair. Our anti-cheat moderators have been pinged in Discord and are reviewing the suspect.
-                </p>
-                <button
-                  onClick={() => setReportSuccess(false)}
-                  className="px-6 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-display font-bold text-xs uppercase"
-                >
-                  Submit Another Report
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleReportSubmit} className="space-y-6">
-                {/* Suspect Steam ID Input */}
-                <div>
-                  <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-2">
-                    Suspect Steam64 ID or Profile Link *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={suspectInput}
-                    onChange={(e) => setSuspectInput(e.target.value)}
-                    placeholder="e.g. 76561198012345678 or https://steamcommunity.com/id/suspect"
-                    className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 font-sans text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                  />
-                </div>
-
-                {/* Violation Category Selector */}
-                <div>
-                  <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-2">
-                    Violation Type *
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                    {categories.map((cat) => {
-                      const Icon = cat.icon;
-                      const isSelected = category === cat.id;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setCategory(cat.id)}
-                          className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all text-xs font-display font-bold uppercase ${
-                            isSelected
-                              ? "bg-red-600/20 border-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]"
-                              : "bg-white/[0.02] border-white/10 text-zinc-400 hover:text-white hover:bg-white/5"
-                          }`}
-                        >
-                          <Icon className={`w-4 h-4 ${cat.color}`} />
-                          <span className="truncate">{cat.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Proof Link Input */}
-                <div>
-                  <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-2">
-                    Video Proof URL (Medal, YouTube, Streamable, Imgur)
-                  </label>
-                  <div className="relative flex items-center">
-                    <Video className="w-4 h-4 text-zinc-400 absolute left-3.5 pointer-events-none" />
-                    <input
-                      type="url"
-                      value={proofUrl}
-                      onChange={(e) => setProofUrl(e.target.value)}
-                      placeholder="https://medal.tv/clip/... or https://youtube.com/watch?v=..."
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/60 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 font-sans text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Description & Combatlog Input */}
-                <div>
-                  <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-2">
-                    Description / Combatlog Timestamps
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Explain what happened, monument location, weapon used, or paste F1 combatlog lines..."
-                    className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 font-sans text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                  />
-                </div>
-
-                {/* Submit Action */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                  <div className="text-xs text-zinc-400 font-sans">
-                    Reporting as: <strong className="text-white">{user ? user.steam_name : "Anonymous Survivor"}</strong>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full sm:w-auto atlas-btn-red px-8 py-3.5 text-white font-display font-extrabold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(230,32,32,0.4)] disabled:opacity-50"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>DISPATCHING REPORT...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        <span>DISPATCH REPORT TO DISCORD</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
         </div>
       </div>
 
@@ -396,7 +272,7 @@ export const ReportRulesPage: React.FC = () => {
             </div>
             <h4 className="font-display font-bold text-base text-white uppercase mb-1">Identity & status</h4>
             <p className="text-zinc-400 text-xs font-sans">
-              Avatar, country, online status, and verified account flags.
+              Avatar, country, online status, account flags.
             </p>
           </div>
 
@@ -406,7 +282,7 @@ export const ReportRulesPage: React.FC = () => {
             </div>
             <h4 className="font-display font-bold text-base text-white uppercase mb-1">Scrim performance</h4>
             <p className="text-zinc-400 text-xs font-sans">
-              Combat ranking, W/L, K/D, damage dealt, and recent wipe form.
+              ELO rating, W/L, K/D, damage, recent form.
             </p>
           </div>
 
@@ -416,7 +292,7 @@ export const ReportRulesPage: React.FC = () => {
             </div>
             <h4 className="font-display font-bold text-base text-white uppercase mb-1">Gamemode stats</h4>
             <p className="text-zinc-400 text-xs font-sans">
-              PvP kills, headshot accuracy, and total explosives used.
+              Duels, FFA, GunGame — kills, wins, accuracy.
             </p>
           </div>
 
@@ -426,7 +302,7 @@ export const ReportRulesPage: React.FC = () => {
             </div>
             <h4 className="font-display font-bold text-base text-white uppercase mb-1">Aim trainer</h4>
             <p className="text-zinc-400 text-xs font-sans">
-              Total aim accuracy, recoil consistency, and weapon masteries.
+              Total aimtrain hours and sessions.
             </p>
           </div>
 
@@ -436,7 +312,7 @@ export const ReportRulesPage: React.FC = () => {
             </div>
             <h4 className="font-display font-bold text-base text-white uppercase mb-1">Combat stats</h4>
             <p className="text-zinc-400 text-xs font-sans">
-              Live K/D ratio, farm gathered, raids survived, and server hours.
+              K/D ratio, accuracy, headshot rate, kills & deaths.
             </p>
           </div>
 
@@ -446,14 +322,146 @@ export const ReportRulesPage: React.FC = () => {
             </div>
             <h4 className="font-display font-bold text-base text-white uppercase mb-1">Ban records</h4>
             <p className="text-zinc-400 text-xs font-sans">
-              EAC game bans, VAC status, and community server blacklist check.
+              Active and expired bans with full timeline.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Rules Section */}
+      {/* Rules Section Component */}
       <RulesSection />
+
+      {/* Cheater Report Modal Popup */}
+      {isReportModalOpen && lookedUpPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl rounded-3xl bg-[#0b0e14] border border-red-500/40 p-6 sm:p-8 shadow-[0_0_50px_rgba(230,32,32,0.3)] max-h-[90vh] overflow-y-auto">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsReportModalOpen(false)}
+              className="absolute top-5 right-5 p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/40">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-display font-black text-2xl text-white uppercase">
+                  Report Suspect: {lookedUpPlayer.steam_name}
+                </h3>
+                <p className="text-zinc-400 text-xs font-mono">
+                  Steam64: {lookedUpPlayer.steam_id}
+                </p>
+              </div>
+            </div>
+
+            {/* Suspect Quick Preview */}
+            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-3 mb-6">
+              <img
+                src={lookedUpPlayer.avatar}
+                alt={lookedUpPlayer.steam_name}
+                className="w-10 h-10 rounded-lg border border-red-500/50"
+              />
+              <div className="text-xs">
+                <div className="font-display font-bold text-white">{lookedUpPlayer.steam_name}</div>
+                <div className="font-mono text-zinc-400">Kills: {lookedUpPlayer.stats?.kills || 0} • K/D: {lookedUpPlayer.stats?.kd_ratio || "0.00"}</div>
+              </div>
+            </div>
+
+            <form onSubmit={handleReportSubmit} className="space-y-5">
+              {/* Violation Type */}
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-2">
+                  Select Violation Type *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {categories.map((cat) => {
+                    const Icon = cat.icon;
+                    const isSelected = category === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategory(cat.id)}
+                        className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all text-xs font-display font-bold uppercase ${
+                          isSelected
+                            ? "bg-red-600/20 border-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]"
+                            : "bg-white/[0.02] border-white/10 text-zinc-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${cat.color}`} />
+                        <span className="truncate">{cat.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Proof Video Link */}
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-1.5">
+                  Video Proof URL (Medal, YouTube, Streamable)
+                </label>
+                <div className="relative flex items-center">
+                  <Video className="w-4 h-4 text-zinc-400 absolute left-3.5 pointer-events-none" />
+                  <input
+                    type="url"
+                    value={proofUrl}
+                    onChange={(e) => setProofUrl(e.target.value)}
+                    placeholder="https://medal.tv/clip/... or https://youtube.com/..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/60 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 font-sans text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+
+              {/* Description / Notes */}
+              <div>
+                <label className="block text-xs font-mono font-bold uppercase text-zinc-300 mb-1.5">
+                  Description / Combatlog Notes
+                </label>
+                <textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Explain what happened, weapon used, monument location..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-black/60 border border-white/15 focus:border-red-500 text-white placeholder-zinc-500 font-sans text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-zinc-300 font-display font-bold text-xs uppercase"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="atlas-btn-red px-6 py-2.5 text-white font-display font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_20px_rgba(230,32,32,0.4)] disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>DISPATCHING...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>DISPATCH REPORT TO DISCORD</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
