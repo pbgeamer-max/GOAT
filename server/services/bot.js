@@ -18,7 +18,9 @@ import {
   getVoiceLeaderboard,
 } from "../database/db.js";
 import { setRustServerBooster } from "./rcon.js";
+import { config } from "../config.js";
 import dgram from "dgram";
+
 
 export const botClient = new Client({
   intents: [
