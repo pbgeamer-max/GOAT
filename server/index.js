@@ -32,16 +32,17 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session handling
+// Session handling with 1-year lifetime
 app.use(
   session({
     secret: config.sessionSecret,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
-      secure: false, // Railway proxy handles SSL
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: false, // Handled by reverse proxy SSL
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days permanent login
       sameSite: "lax",
+      httpOnly: true,
     },
   })
 );
