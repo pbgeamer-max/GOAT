@@ -906,6 +906,52 @@ export async function syncExistingBoosters() {
 }
 
 /**
+ * Automatically sync verified roles across all Discord members:
+ * - If a member has the verified role but is NOT linked -> Automatically REVOKE the role!
+ * - If a member is linked but missing the role -> Automatically GRANT the role!
+ */
+export async function syncVerifiedRoles() {
+  if (!config.discord.guildId || !config.discord.verifiedRoleId || !isBotReady) return;
+
+  try {
+    const guild = await botClient.guilds.fetch(config.discord.guildId).catch(() => null);
+    if (!guild) return;
+
+    const roleId = config.discord.verifiedRoleId;
+    const members = await guild.members.fetch().catch(() => null);
+    if (!members) return;
+
+    let revokedCount = 0;
+    let grantedCount = 0;
+
+    for (const [id, member] of members) {
+      if (member.user.bot) continue;
+
+      const hasRole = member.roles.cache.has(roleId);
+      const linkedUser = getUserByDiscordId(member.id);
+
+      if (hasRole && (!linkedUser || !linkedUser.is_linked)) {
+        // Member has role but is NOT linked in database -> Revoke role!
+        await member.roles.remove(roleId).catch(() => {});
+        revokedCount++;
+        console.log(`[Role Sync] 🔒 Revoked verified role from unlinked member: ${member.user.tag} (${member.id})`);
+      } else if (!hasRole && linkedUser && linkedUser.is_linked) {
+        // Member is linked in database but missing role -> Grant role!
+        await member.roles.add(roleId).catch(() => {});
+        grantedCount++;
+        console.log(`[Role Sync] ⭐ Restored verified role for linked member: ${member.user.tag} (${member.id})`);
+      }
+    }
+
+    if (revokedCount > 0 || grantedCount > 0) {
+      console.log(`[Role Sync] 🔄 Role audit complete: ${revokedCount} unlinked revoked, ${grantedCount} linked restored.`);
+    }
+  } catch (err) {
+    console.error("[Role Sync Error]:", err.message);
+  }
+}
+
+/**
  * Initialize and start Discord Bot
  */
 export async function startDiscordBot() {
@@ -923,12 +969,14 @@ export async function startDiscordBot() {
     setupBoosterListener();
     setupVoiceTracking();
     await syncExistingBoosters();
+    await syncVerifiedRoles();
     await scanActiveVoiceMembers();
     startVoiceFlushLoop();
     await tick();
 
     setInterval(tick, config.timing.pollIntervalMs);
     setInterval(() => syncVoiceChannel(), config.timing.voiceSyncMs);
+    setInterval(() => syncVerifiedRoles(), 120000); // Audit and auto-revoke every 2 minutes
   });
 
   botClient.on(Events.Error, (err) => {

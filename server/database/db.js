@@ -11,8 +11,8 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-let firestore = null;
-let isFirebaseActive = false;
+export let firestore = null;
+export let isFirebaseActive = false;
 
 // ── In-Memory Sync Cache for instant microsecond responses ────
 const memCache = {

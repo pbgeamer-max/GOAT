@@ -32,9 +32,13 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session handling with 1-year lifetime
+import { FirestoreSessionStore } from "./database/sessionStore.js";
+import { firestore } from "./database/db.js";
+
+// Session handling with permanent Firestore storage (1-year lifetime)
 app.use(
   session({
+    store: new FirestoreSessionStore(() => firestore),
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
