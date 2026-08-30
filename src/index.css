@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #08090c;
+    --bg-secondary: #0d0f14;
+    --bg-tertiary: #13161f;
+    --rust-orange: #f97316;
+    --rust-amber: #ff6a00;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #08090c;
+    color: #f3f4f6;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.12) 0%, transparent 60%),
+      radial-gradient(circle at 10% 40%, rgba(255, 85, 0, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 90% 70%, rgba(249, 115, 22, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* Custom high-tech scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #08090c;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1f2330;
+    border-radius: 4px;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #f97316;
+  }
+}
+
+@layer utilities {
+  /* Subtle tactical grid background overlay */
+  .bg-tactical-grid {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  }
+
+  .bg-tactical-dots {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Metallic and glowing text effects */
+  .text-glow-orange {
+    text-shadow: 0 0 20px rgba(249, 115, 22, 0.6), 0 0 40px rgba(249, 115, 22, 0.3);
+  }
+
+  .text-metallic {
+    background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-rust-gradient {
+    background: linear-gradient(135deg, #ffffff 20%, #fed7aa 50%, #f97316 80%, #ea580c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Glassmorphism cards */
+  .glass-card {
+    background: rgba(13, 15, 20, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .glass-card-hover {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card-hover:hover {
+    background: rgba(20, 24, 33, 0.85);
+    border-color: rgba(249, 115, 22, 0.35);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(249, 115, 22, 0.2);
+    transform: translateY(-3px);
+  }
+
+  /* Chamfered gaming corners */
+  .clip-chamfer {
+    clip-path: polygon(
+      0 12px,
+      12px 0,
+      100% 0,
+      100% calc(100% - 12px),
+      calc(100% - 12px) 100%,
+      0 100%
+    );
+  }
+
+  .clip-chamfer-lg {
+    clip-path: polygon(
+      0 18px,
+      18px 0,
+      100% 0,
+      100% calc(100% - 18px),
+      calc(100% - 18px) 100%,
+      0 100%
+    );
+  }
+
+  /* Atlas Rust 1:1 Red Cut Button */
+  .atlas-btn-red {
+    background: linear-gradient(135deg, #e62020 0%, #c41212 100%);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .atlas-btn-red:hover {
+    background: linear-gradient(135deg, #ff3333 0%, #dc1818 100%);
+    box-shadow: 0 0 30px rgba(230, 32, 32, 0.6);
+    transform: translateY(-2px);
+  }
+
+  /* Atlas Rust 1:1 Dark Cut Button */
+  .atlas-btn-dark {
+    background: rgba(16, 20, 28, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .atlas-btn-dark:hover {
+    background: rgba(26, 32, 45, 0.95);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* Atlas Golden Store Highlight Box */
+  .atlas-store-badge {
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    color: #facc15;
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
+  }
+}
+
+/* Glowing active badge pulse */
+@keyframes beaconPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.beacon-online {
+  animation: beaconPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}

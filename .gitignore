@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+.env
+.env.local
+*.log
+data/
+*.code-workspace
+serviceAccountKey.json
+server/database/serviceAccountKey.json
+"يوت كلان goat/"
