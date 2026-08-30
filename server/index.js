@@ -8,6 +8,7 @@ import passport from "./auth/passport.js";
 import authRoutes from "./routes/auth.js";
 import statsRoutes from "./routes/stats.js";
 import serverRoutes from "./routes/server.js";
+import reportRoutes from "./routes/report.js";
 import { startDiscordBot } from "./services/bot.js";
 import { startRconMonitor } from "./services/rconMonitor.js";
 
@@ -59,6 +60,7 @@ app.use(passport.session());
 app.use(authRoutes);
 app.use(statsRoutes);
 app.use(serverRoutes);
+app.use(reportRoutes);
 
 // Serve Frontend Static Assets (if built)
 const distPath = path.resolve(__dirname, "../dist");

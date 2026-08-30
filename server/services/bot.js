@@ -1024,3 +1024,116 @@ export async function startDiscordBot() {
   }
 }
 
+/**
+ * Transmit a player/cheater report to Discord (Staff Channel + Direct Staff DM)
+ */
+export async function sendPlayerReport(reportData) {
+  if (!isBotReady) {
+    console.warn("[Bot Report] Discord bot is not ready yet to send report.");
+    return { success: false, reason: "Discord bot is offline" };
+  }
+
+  try {
+    const {
+      suspectSteamId,
+      suspectName = "Unknown Player",
+      suspectAvatar = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg",
+      category = "Suspicious Behavior",
+      proofUrl = "",
+      description = "",
+      reporterName = "Anonymous Survivor",
+      reporterSteamId = null,
+      reporterDiscordTag = null,
+    } = reportData;
+
+    const embed = new EmbedBuilder()
+      .setTitle(`🚨 CHEATER REPORT: ${suspectName}`)
+      .setColor(0xe62020)
+      .setDescription(
+        `A player has submitted an urgent cheater/rule violation report via the **GOAT RUST** website.\n\n` +
+        `**🎯 Suspect Name:** \`${suspectName}\`\n` +
+        `**🆔 Steam64 ID:** \`${suspectSteamId}\`\n` +
+        `**⚠️ Violation Type:** \`${category}\``
+      )
+      .addFields(
+        {
+          name: "📝 Description / Combatlog",
+          value: description ? `\`\`\`${description.slice(0, 1000)}\`\`\`` : "*No additional description provided*",
+          inline: false,
+        },
+        {
+          name: "📹 Video / Proof Link",
+          value: proofUrl ? `[🔗 Watch Proof Evidence](${proofUrl})` : "*No video link attached*",
+          inline: true,
+        },
+        {
+          name: "👤 Reported By",
+          value: reporterSteamId
+            ? `**${reporterName}** (\`${reporterSteamId}\`)${reporterDiscordTag ? ` • <@${reporterDiscordTag}>` : ""}`
+            : "*Anonymous Survivor*",
+          inline: true,
+        },
+        {
+          name: "🎮 Server Node",
+          value: `\`${config.rust.name}\` (${config.rust.ip}:${config.rust.port})`,
+          inline: false,
+        }
+      )
+      .setThumbnail(suspectAvatar)
+      .setFooter({ text: "GOAT Anti-Cheat Overwatch System • Automated Report Dispatcher" })
+      .setTimestamp();
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel("Open Steam Profile")
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://steamcommunity.com/profiles/${suspectSteamId}`),
+      new ButtonBuilder()
+        .setLabel("RustStats Tracker")
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://ruststats.gg/player/${suspectSteamId}`)
+    );
+
+    let delivered = false;
+
+    // 1. Send to Staff Report Channel
+    const channelId = config.discord.reportChannelId || config.discord.logChannelId;
+    if (channelId) {
+      try {
+        const channel = await botClient.channels.fetch(channelId).catch(() => null);
+        if (channel?.isTextBased()) {
+          await channel.send({ embeds: [embed], components: [row] });
+          console.log(`[Bot Report] 📢 Sent cheater report for ${suspectName} to channel #${channel.name}`);
+          delivered = true;
+        }
+      } catch (err) {
+        console.error("[Bot Report Channel Error]:", err.message);
+      }
+    }
+
+    // 2. Send Direct DM to Staff/Admin if configured in DISCORD_REPORT_USER_ID
+    if (config.discord.reportUserId) {
+      try {
+        const targetUser = await botClient.users.fetch(config.discord.reportUserId).catch(() => null);
+        if (targetUser) {
+          await targetUser.send({
+            content: `🚨 **[URGENT CHEATER REPORT]** Received from **${reporterName}**:`,
+            embeds: [embed],
+            components: [row],
+          });
+          console.log(`[Bot Report] 📩 Sent cheater report DM to Staff/Owner (${targetUser.tag})`);
+          delivered = true;
+        }
+      } catch (err) {
+        console.error("[Bot Report DM Error]:", err.message);
+      }
+    }
+
+    return { success: delivered };
+  } catch (err) {
+    console.error("[Bot Report Error]:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+

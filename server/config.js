@@ -63,6 +63,9 @@ export const config = {
     logChannelId: clean(process.env.DISCORD_LOG_CHANNEL_ID || process.env.STATUS_CHANNEL_ID, "1540348220310552584"),
     statusChannelId: clean(process.env.STATUS_CHANNEL_ID, ""),
     voiceChannelId: clean(process.env.VOICE_CHANNEL_ID, ""),
+    reportUserId: clean(process.env.DISCORD_REPORT_USER_ID || process.env.DISCORD_ADMIN_ID || process.env.DISCORD_STAFF_ID, ""),
+    reportChannelId: clean(process.env.DISCORD_REPORT_CHANNEL_ID || process.env.DISCORD_LOG_CHANNEL_ID, "1540348220310552584"),
+    reportWebhookUrl: cleanUrl(process.env.DISCORD_REPORT_WEBHOOK_URL, ""),
     inviteUrl: cleanUrl(process.env.DISCORD_INVITE_URL, "https://discord.gg/z48nV6hCWm"),
   },
 
