@@ -265,6 +265,9 @@ export function buildActionRow() {
   return row;
 }
 
+// Deduplication map to prevent sending duplicate link notifications within 2 minutes
+const recentLinkNotifications = new Map();
+
 /**
  * Automatically assign @Verified role and send logs + DM
  */
@@ -295,8 +298,12 @@ export async function grantVerifiedRole(discordId, steamUser) {
       console.log(`[Bot] Assigned role to member: ${member.user.tag} (${discordId})`);
     }
 
-    // Send Verification Embed to Log Channel
-    if (config.discord.logChannelId) {
+    // Send Verification Embed to Log Channel (Debounced to prevent duplicates)
+    const now = Date.now();
+    const lastSent = recentLinkNotifications.get(steamUser.steam_id) || 0;
+
+    if (config.discord.logChannelId && now - lastSent > 120000) {
+      recentLinkNotifications.set(steamUser.steam_id, now);
       try {
         const logChannel = await botClient.channels.fetch(config.discord.logChannelId);
         if (logChannel?.isTextBased()) {
@@ -308,7 +315,7 @@ export async function grantVerifiedRole(discordId, steamUser) {
               { name: "🎮 Steam Name", value: `**${steamUser.steam_name}**`, inline: true },
               { name: "🆔 SteamID64", value: `\`${steamUser.steam_id}\``, inline: true },
               { name: "💬 Discord", value: `<@${discordId}>`, inline: true },
-              { name: "🎁 In-Game Reward", value: "`/kit discord` Unlocked via RCON", inline: true },
+              { name: "🎁 In-Game Reward", value: "`/kit discord`", inline: true },
               { name: "🛡️ Assigned Role", value: config.discord.verifiedRoleId ? `<@&${config.discord.verifiedRoleId}>` : "Verified", inline: true }
             )
             .setThumbnail(steamUser.avatar || "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg")
