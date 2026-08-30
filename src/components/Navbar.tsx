@@ -59,16 +59,17 @@ export const Navbar: React.FC = () => {
         }`}
       >
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Left: Atlas Style Bold Text Logo */}
+          {/* Left: 128.gif Official Animated Logo */}
           <a
             href="#home"
             onClick={(e) => handleNavClick("home", e)}
             className="flex items-center gap-2 group select-none cursor-pointer"
           >
-            <span className="font-display font-black text-2xl sm:text-3xl tracking-tighter text-white uppercase group-hover:text-red-500 transition-colors">
-              GOAT
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block -ml-1 mt-1 group-hover:scale-150 transition-transform" />
+            <img
+              src="/128.gif"
+              alt="GOAT RUST"
+              className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-xl drop-shadow-[0_0_15px_rgba(230,32,32,0.6)] group-hover:scale-105 transition-transform"
+            />
           </a>
 
           {/* Center: Navigation Links with Active States */}
@@ -278,7 +279,10 @@ export const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden bg-[#06080d]/98 backdrop-blur-2xl flex flex-col pt-20 px-6 animate-in fade-in duration-200">
           <div className="flex justify-between items-center pb-6 border-b border-white/10">
-            <span className="font-display font-black text-2xl text-white">GOAT</span>
+            <div className="flex items-center gap-2">
+              <img src="/128.gif" alt="GOAT" className="w-10 h-10 object-contain rounded-lg drop-shadow-[0_0_10px_rgba(230,32,32,0.5)]" />
+              <span className="font-display font-black text-2xl text-white">GOAT</span>
+            </div>
             <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-zinc-400 hover:text-white">
               <X className="w-6 h-6" />
             </button>
