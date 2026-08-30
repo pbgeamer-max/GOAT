@@ -57,9 +57,10 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
-        display: ["var(--font-rajdhani)", "sans-serif"],
-        mono: ["var(--font-jetbrains)", "monospace"],
+        sans: ["Outfit", "Inter", "sans-serif"],
+        display: ["Rajdhani", "Teko", "Outfit", "sans-serif"],
+        headline: ["Teko", "Rajdhani", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       boxShadow: {
         "rust-glow": "0 0 35px -5px rgba(249, 115, 22, 0.4)",
