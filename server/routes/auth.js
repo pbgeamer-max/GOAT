@@ -152,24 +152,39 @@ router.get("/api/me", (req, res) => {
   });
 });
 
-// 7. Manual / Re-trigger In-Game Kit Grant (RCON)
+// In-Memory Cooldown Map to prevent RCON and Discord spam (60s cooldown per player)
+const syncCooldowns = new Map();
+
+// 7. Manual / Re-trigger In-Game Kit Grant (RCON) with 60s cooldown
 router.post("/api/claim-kit", async (req, res) => {
   const steamId = req.user?.steam_id || req.session?.steam_id;
   if (!steamId) {
     return res.status(401).json({ success: false, error: "Please log in first." });
   }
 
+  const now = Date.now();
+  const lastSync = syncCooldowns.get(steamId) || 0;
+  const cooldownMs = 60 * 1000;
+
+  if (now - lastSync < cooldownMs) {
+    const remainingSec = Math.ceil((cooldownMs - (now - lastSync)) / 1000);
+    return res.status(429).json({
+      success: false,
+      error: `Please wait ${remainingSec}s before syncing kits again.`,
+      remainingSeconds: remainingSec,
+    });
+  }
+
   const user = getUser(steamId);
   if (!user || !user.is_linked) {
-    return res.status(400).json({ success: false, error: "You must link Discord before claiming /kit discord." });
+    return res.status(400).json({ success: false, error: "You must link Discord before claiming /kit." });
   }
+
+  syncCooldowns.set(steamId, now);
 
   try {
     const rconRes = await grantDiscordKit(user.steam_id, user.steam_name);
-    if (user.discord_id) {
-      await grantVerifiedRole(user.discord_id, user);
-    }
-    return res.json({ success: true, message: "Kit command sent to Rust server!", rcon: rconRes });
+    return res.json({ success: true, message: "Kit permissions synced with Rust server!", rcon: rconRes });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

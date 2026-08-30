@@ -25,6 +25,16 @@ export const UserProfileModal: React.FC = () => {
   const { showToast } = useToast();
   const [claiming, setClaiming] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Cooldown countdown timer
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   if (!isProfileOpen || !user) return null;
 
@@ -35,14 +45,19 @@ export const UserProfileModal: React.FC = () => {
   const voiceMinutes = Math.floor((voiceSeconds % 3600) / 60);
 
   const handleClaimKit = async () => {
+    if (cooldown > 0 || claiming) return;
     setClaiming(true);
     const res = await claimKit();
     setClaiming(false);
 
     if (res.success) {
-      showToast("In-game kits (/kit discord & /kit booster) synced via RCON!", "success");
+      setCooldown(60);
+      showToast("In-game kits (/kit) synced via RCON!", "success");
     } else {
-      showToast(res.error || "RCON command sent to Rust server.", "info");
+      if (res.remainingSeconds) {
+        setCooldown(res.remainingSeconds);
+      }
+      showToast(res.error || "Please wait before syncing again.", "info");
     }
   };
 
@@ -255,11 +270,11 @@ export const UserProfileModal: React.FC = () => {
             {user.is_linked && (
               <button
                 onClick={handleClaimKit}
-                disabled={claiming}
-                className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs uppercase flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
+                disabled={claiming || cooldown > 0}
+                className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs uppercase flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:shadow-none"
               >
                 <RefreshCw className={`w-4 h-4 ${claiming ? "animate-spin" : ""}`} />
-                {claiming ? "Syncing..." : "Sync Kits (RCON)"}
+                {claiming ? "Syncing..." : cooldown > 0 ? `Wait ${cooldown}s` : "Sync Kits (RCON)"}
               </button>
             )}
 
