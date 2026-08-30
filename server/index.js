@@ -79,15 +79,25 @@ app.use((req, res, next) => {
 });
 
 // Start Express Server
-app.listen(config.port, "0.0.0.0", () => {
+const mainPort = config.port;
+app.listen(mainPort, "0.0.0.0", () => {
   console.log("==================================================");
   console.log(`🐐 [GOAT SERVERS] Backend running on: ${config.baseUrl}`);
-  console.log(`🚀 [HTTP Server] Listening on 0.0.0.0:${config.port} (PORT env: ${process.env.PORT || "3000"})`);
+  console.log(`🚀 [HTTP Server] Listening on 0.0.0.0:${mainPort} (PORT env: ${process.env.PORT || "3000"})`);
   console.log(`🎮 Monitoring Rust Server: ${config.rust.ip}:${config.rust.port}`);
   console.log(`🔐 Steam Auth: ${config.steam.apiKey ? "Configured ✅" : "Missing Key ⚠️"}`);
   console.log(`💬 Discord OAuth & Bot: ${config.discord.botToken ? "Configured ✅" : "Missing Token ⚠️"}`);
   console.log("==================================================");
 });
+
+// Dual-listen fallback for 3000 if Railway port was set to 8080
+if (mainPort !== 3000) {
+  try {
+    app.listen(3000, "0.0.0.0", () => {
+      console.log(`🚀 [HTTP Server] Dual-listener active on 0.0.0.0:3000 (Matching Railway custom domain)`);
+    });
+  } catch (_) {}
+}
 
 // Start Discord Bot background worker
 startDiscordBot().catch((err) => {
