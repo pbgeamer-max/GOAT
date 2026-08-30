@@ -82,6 +82,7 @@ app.use((req, res, next) => {
 app.listen(config.port, "0.0.0.0", () => {
   console.log("==================================================");
   console.log(`🐐 [GOAT SERVERS] Backend running on: ${config.baseUrl}`);
+  console.log(`🚀 [HTTP Server] Listening on 0.0.0.0:${config.port} (PORT env: ${process.env.PORT || "3000"})`);
   console.log(`🎮 Monitoring Rust Server: ${config.rust.ip}:${config.rust.port}`);
   console.log(`🔐 Steam Auth: ${config.steam.apiKey ? "Configured ✅" : "Missing Key ⚠️"}`);
   console.log(`💬 Discord OAuth & Bot: ${config.discord.botToken ? "Configured ✅" : "Missing Token ⚠️"}`);
