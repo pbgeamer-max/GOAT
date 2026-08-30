@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { useServer } from "@/context/ServerContext";
+import { useNavigation } from "@/context/NavigationContext";
 import { copyToClipboard } from "@/lib/utils";
 import { useToast } from "@/components/Toast";
 import { ChevronRight, Copy, Check, ShieldAlert } from "lucide-react";
 
 export const HeroSection: React.FC = () => {
   const { status, connectCommand } = useServer();
+  const { activePage, navigate } = useNavigation();
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
 
@@ -69,7 +71,11 @@ export const HeroSection: React.FC = () => {
           {/* Primary: VISIT STORE > */}
           <a
             href="#store"
-            className="atlas-btn-red px-8 py-4 text-white font-display font-extrabold text-sm sm:text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(230,32,32,0.4)]"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("store");
+            }}
+            className="atlas-btn-red px-8 py-4 text-white font-display font-extrabold text-sm sm:text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(230,32,32,0.4)] cursor-pointer"
           >
             <span>VISIT STORE</span>
             <ChevronRight className="w-4 h-4 text-white/80" />
@@ -78,7 +84,11 @@ export const HeroSection: React.FC = () => {
           {/* Secondary: REPORT CHEATER > */}
           <a
             href="#rules"
-            className="atlas-btn-dark px-7 py-4 text-zinc-200 font-display font-bold text-sm sm:text-base uppercase tracking-wider flex items-center justify-center gap-2"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("rules");
+            }}
+            className="atlas-btn-dark px-7 py-4 text-zinc-200 font-display font-bold text-sm sm:text-base uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>REPORT CHEATER</span>
             <ChevronRight className="w-4 h-4 text-zinc-400" />

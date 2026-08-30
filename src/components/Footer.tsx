@@ -1,13 +1,20 @@
 import React from "react";
 import { Logo } from "@/components/Logo";
 import { useServer } from "@/context/ServerContext";
+import { useNavigation, PageId } from "@/context/NavigationContext";
 import { ArrowUp } from "lucide-react";
 
 export const Footer: React.FC = () => {
   const { discordUrl, serverName } = useServer();
+  const { navigate } = useNavigation();
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleNavClick = (page: PageId, e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(page);
   };
 
   return (
@@ -22,22 +29,56 @@ export const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Nav Anchor Links */}
+          {/* Quick Nav Links */}
           <div className="flex flex-wrap justify-center items-center gap-6 font-display font-bold text-sm tracking-wider uppercase text-zinc-400">
-            <a href="#home" className="hover:text-white transition-colors">
+            <a
+              href="#home"
+              onClick={(e) => handleNavClick("home", e)}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
               Home
             </a>
-            <a href="#server" className="hover:text-white transition-colors">
-              Server
+            <a
+              href="#store"
+              onClick={(e) => handleNavClick("store", e)}
+              className="text-yellow-400 hover:text-yellow-300 transition-colors cursor-pointer"
+            >
+              Store
             </a>
-            <a href="#how-to-play" className="hover:text-white transition-colors">
+            <a
+              href="#players"
+              onClick={(e) => handleNavClick("players", e)}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Players
+            </a>
+            <a
+              href="#wipes"
+              onClick={(e) => handleNavClick("wipes", e)}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Wipes
+            </a>
+            <a
+              href="#how-to-play"
+              onClick={(e) => handleNavClick("how-to-play", e)}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
               How to Play
             </a>
-            <a href="#rules" className="hover:text-white transition-colors">
+            <a
+              href="#rules"
+              onClick={(e) => handleNavClick("rules", e)}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
               Rules
             </a>
-            <a href="#wipe" className="hover:text-white transition-colors">
-              Wipe
+            <a
+              href="#maps"
+              onClick={(e) => handleNavClick("maps", e)}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Maps
             </a>
             <a
               href={discordUrl}
