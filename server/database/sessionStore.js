@@ -40,9 +40,12 @@ export class FirestoreSessionStore extends session.Store {
       ? new Date(sess.cookie.expires).getTime()
       : Date.now() + 365 * 24 * 60 * 60 * 1000;
 
+    // Convert session to plain JSON object (Firestore doesn't support class instances)
+    const plainSession = JSON.parse(JSON.stringify(sess));
+
     col.doc(sid).set(
       {
-        session: sess,
+        session: plainSession,
         expires,
         updated_at: new Date().toISOString(),
       },
