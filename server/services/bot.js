@@ -751,9 +751,9 @@ async function updatePresence(snapshot) {
       activities: [
         {
           name: online
-            ? `🟢 ${snapshot.players}/${snapshot.maxPlayers} | /kit discord`
-            : "🔴 Server Offline",
-          type: ActivityType.Custom,
+            ? `${snapshot.players}/${snapshot.maxPlayers} players online`
+            : "Server Offline",
+          type: online ? ActivityType.Watching : ActivityType.Custom,
         },
       ],
     });
