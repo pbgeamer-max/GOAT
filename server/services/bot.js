@@ -905,9 +905,12 @@ export async function syncExistingBoosters() {
   }
 }
 
+// Map to track members who received revocation DM (prevents DM spam)
+const notifiedRevokeDms = new Set();
+
 /**
  * Automatically sync verified roles across all Discord members:
- * - If a member has the verified role but is NOT linked -> Automatically REVOKE the role!
+ * - If a member has the verified role but is NOT linked -> Automatically REVOKE the role and send DM with link!
  * - If a member is linked but missing the role -> Automatically GRANT the role!
  */
 export async function syncVerifiedRoles() {
@@ -935,9 +938,40 @@ export async function syncVerifiedRoles() {
         await member.roles.remove(roleId).catch(() => {});
         revokedCount++;
         console.log(`[Role Sync] 🔒 Revoked verified role from unlinked member: ${member.user.tag} (${member.id})`);
+
+        // Send friendly DM with link to connect (only once)
+        if (!notifiedRevokeDms.has(member.id)) {
+          notifiedRevokeDms.add(member.id);
+          try {
+            const revokeEmbed = new EmbedBuilder()
+              .setTitle("⚠️ تنبيه: مطلوب ربط حسابك في GOAT RUST")
+              .setColor(0xff3b30)
+              .setDescription(
+                `مرحباً **${member.user.username}** 👋\n\n` +
+                `تمت إزالة رتبة التحقق لأن حسابك في الديسكورد غير مربوط بحسابك في **Steam** بعد.\n\n` +
+                `🎁 **المميزات التي ستحصل عليها عند الربط:**\n` +
+                `• استعادة رتبة التحقق الرسمية في الديسكورد.\n` +
+                `• فتح كيت اللعبة المجاني \`/kit\` فوراً داخل سيرفر الراست.\n` +
+                `• تتبع ساعات لعبك وقتلاتك وساعات الصوت في الترتيب العام!\n\n` +
+                `👇 **اضغط على الزر أدناه للدخول وربط حسابك الآن:**`
+              )
+              .setFooter({ text: "GOAT SERVERS • Automated Verification System" })
+              .setTimestamp();
+
+            const linkRow = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setLabel("🔗 اربط حسابك الآن | Link Account")
+                .setStyle(ButtonStyle.Link)
+                .setURL(`${config.baseUrl}`)
+            );
+
+            await member.send({ embeds: [revokeEmbed], components: [linkRow] }).catch(() => {});
+          } catch (_) {}
+        }
       } else if (!hasRole && linkedUser && linkedUser.is_linked) {
         // Member is linked in database but missing role -> Grant role!
         await member.roles.add(roleId).catch(() => {});
+        notifiedRevokeDms.delete(member.id); // Reset so if they unlink later, they can be notified
         grantedCount++;
         console.log(`[Role Sync] ⭐ Restored verified role for linked member: ${member.user.tag} (${member.id})`);
       }
