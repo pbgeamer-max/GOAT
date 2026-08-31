@@ -1153,10 +1153,14 @@ export async function grantDiscordVipRole(discordId, tier = "vip", steamName = "
     const member = await guild.members.fetch(discordId).catch(() => null);
     if (!member) return { success: false };
 
-    const roleId = config.discord.vipRoleId;
+    // Grant the tier-specific Discord role (e.g. VIP, MVP, GOD, GUNS, BUILDER)
+    const tierKey = (tier || "vip").toLowerCase();
+    const roleId = (config.discord.tierRoles || {})[tierKey];
     if (roleId) {
       await member.roles.add(roleId).catch(() => {});
-      console.log(`[Bot VIP] 👑 Granted VIP Discord role to ${member.user.tag} (${discordId})`);
+      console.log(`[Bot VIP] 👑 Granted @${tierKey.toUpperCase()} Discord role to ${member.user.tag} (${discordId})`);
+    } else {
+      console.warn(`[Bot VIP] ⚠️ No Discord role configured for tier "${tierKey}" (set DISCORD_${tierKey.toUpperCase()}_ROLE_ID in Railway)`);
     }
 
     // Send VIP Welcome Embed DM
@@ -1200,10 +1204,12 @@ export async function revokeDiscordVipRole(discordId, tier = "vip") {
     const member = await guild.members.fetch(discordId).catch(() => null);
     if (!member) return { success: false };
 
-    const roleId = config.discord.vipRoleId;
+    // Revoke the tier-specific Discord role
+    const tierKey = (tier || "vip").toLowerCase();
+    const roleId = (config.discord.tierRoles || {})[tierKey];
     if (roleId && member.roles.cache.has(roleId)) {
       await member.roles.remove(roleId).catch(() => {});
-      console.log(`[Bot VIP] 🔒 Revoked expired VIP Discord role from ${member.user.tag} (${discordId})`);
+      console.log(`[Bot VIP] 🔒 Revoked expired @${tierKey.toUpperCase()} Discord role from ${member.user.tag} (${discordId})`);
     }
 
     // Send VIP Expiry Notice DM
