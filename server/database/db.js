@@ -228,6 +228,84 @@ export function updateBoosterStatus(steam_id, isBooster = 1) {
 }
 
 /**
+ * Grant VIP Subscription & HQ Building Privileges (30 Days)
+ */
+export function grantVipSubscription(steam_id, tier = "vip", durationDays = 30, discord_id = null) {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+  if (memCache.users[steam_id]) {
+    memCache.users[steam_id].is_vip = true;
+    memCache.users[steam_id].vip_tier = tier.toLowerCase();
+    memCache.users[steam_id].vip_started_at = now.toISOString();
+    memCache.users[steam_id].vip_expires_at = expiresAt;
+    memCache.users[steam_id].vip_has_hq = true;
+    if (discord_id) {
+      memCache.users[steam_id].discord_id = discord_id;
+      memCache.discordMap[discord_id] = steam_id;
+    }
+    memCache.users[steam_id].updated_at = now.toISOString();
+  }
+
+  const payload = {
+    is_vip: true,
+    vip_tier: tier.toLowerCase(),
+    vip_started_at: now.toISOString(),
+    vip_expires_at: expiresAt,
+    vip_has_hq: true,
+    updated_at: now.toISOString(),
+  };
+  if (discord_id) payload.discord_id = discord_id;
+
+  if (isFirebaseActive && firestore) {
+    firestore.collection("users").doc(steam_id).set(payload, { merge: true }).catch(() => {});
+  } else {
+    saveLocalBackup();
+  }
+
+  return { steam_id, tier, expiresAt };
+}
+
+/**
+ * Revoke VIP Subscription & HQ privileges upon 30-day expiration
+ */
+export function revokeVipSubscription(steam_id) {
+  const now = new Date().toISOString();
+  if (memCache.users[steam_id]) {
+    memCache.users[steam_id].is_vip = false;
+    memCache.users[steam_id].vip_tier = null;
+    memCache.users[steam_id].vip_has_hq = false;
+    memCache.users[steam_id].updated_at = now;
+  }
+
+  const payload = {
+    is_vip: false,
+    vip_tier: null,
+    vip_has_hq: false,
+    vip_expired_at: now,
+    updated_at: now,
+  };
+
+  if (isFirebaseActive && firestore) {
+    firestore.collection("users").doc(steam_id).set(payload, { merge: true }).catch(() => {});
+  } else {
+    saveLocalBackup();
+  }
+}
+
+/**
+ * Find all active VIPs whose 30 days period has elapsed
+ */
+export function getExpiredVips() {
+  const now = Date.now();
+  return Object.values(memCache.users).filter((u) => {
+    if (!u.is_vip || !u.vip_expires_at) return false;
+    const exp = new Date(u.vip_expires_at).getTime();
+    return exp <= now;
+  });
+}
+
+/**
  * Get User by Steam ID
  */
 export function getUser(steam_id) {
@@ -244,6 +322,10 @@ export function getUser(steam_id) {
     ...user,
     is_linked: Boolean(user.is_linked),
     is_booster: Boolean(user.is_booster),
+    is_vip: Boolean(user.is_vip),
+    vip_tier: user.vip_tier || null,
+    vip_expires_at: user.vip_expires_at || null,
+    vip_has_hq: Boolean(user.vip_has_hq),
     voice_time_seconds: user.voice_time_seconds || 0,
     stats: {
       ...stats,

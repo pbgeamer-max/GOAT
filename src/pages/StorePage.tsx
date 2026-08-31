@@ -1,10 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StoreSection } from "@/components/StoreSection";
-import { ShoppingBag, Zap, ShieldCheck, Gift, Check, HelpCircle } from "lucide-react";
+import { ShoppingBag, Zap, ShieldCheck, Gift, Crown, Clock, Star } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+
+interface VipStatus {
+  is_vip: boolean;
+  vip_tier: string | null;
+  vip_expires_at: string | null;
+  vip_has_hq: boolean;
+  remaining_days: number;
+}
+
+const TIER_COLORS: Record<string, string> = {
+  god: "from-purple-600 to-fuchsia-500",
+  mvp: "from-cyan-500 to-blue-600",
+  vip: "from-yellow-500 to-amber-400",
+  guns: "from-red-500 to-rose-400",
+  builder: "from-emerald-500 to-green-400",
+};
+
+const TIER_LABELS: Record<string, string> = {
+  god: "⚡ GOD",
+  mvp: "💎 MVP",
+  vip: "⭐ VIP",
+  guns: "🔫 GUNS",
+  builder: "🏗️ BUILDER",
+};
 
 export const StorePage: React.FC = () => {
   const { user, loginWithSteam } = useAuth();
+  const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
+  const [loadingVip, setLoadingVip] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setVipStatus(null); return; }
+    setLoadingVip(true);
+    fetch("/api/user/vip-status", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.success) setVipStatus(data); })
+      .catch(() => {})
+      .finally(() => setLoadingVip(false));
+  }, [user]);
+
+  const tierKey = vipStatus?.vip_tier?.toLowerCase() || "vip";
+  const gradient = TIER_COLORS[tierKey] || TIER_COLORS.vip;
+  const tierLabel = TIER_LABELS[tierKey] || "⭐ VIP";
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full animate-in fade-in duration-300">
@@ -22,19 +62,40 @@ export const StorePage: React.FC = () => {
           </p>
         </div>
 
-        {/* User Steam Status Pill */}
-        <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 flex items-center gap-3">
+        {/* User Status Pill — shows VIP badge if active */}
+        <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 flex items-center gap-3 min-w-[220px]">
           {user ? (
-            <div className="flex items-center gap-3">
-              <img
-                src={user.avatar}
-                alt={user.steam_name}
-                className="w-10 h-10 rounded-lg border border-yellow-500/50"
-              />
-              <div className="text-left">
-                <div className="text-xs text-zinc-400 font-mono">Logged in as:</div>
-                <div className="text-sm font-display font-bold text-white">{user.steam_name}</div>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex items-center gap-3">
+                <img
+                  src={user.avatar}
+                  alt={user.steam_name}
+                  className={`w-10 h-10 rounded-lg border-2 ${vipStatus?.is_vip ? "border-yellow-400" : "border-white/20"}`}
+                />
+                <div className="text-left">
+                  <div className="text-xs text-zinc-400 font-mono">Logged in as:</div>
+                  <div className="text-sm font-display font-bold text-white">{user.steam_name}</div>
+                </div>
               </div>
+
+              {/* VIP Status Badge */}
+              {!loadingVip && vipStatus?.is_vip ? (
+                <div className={`w-full flex items-center justify-between px-3 py-2 rounded-lg bg-gradient-to-r ${gradient} bg-opacity-20 border border-yellow-500/30`}>
+                  <div className="flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-yellow-300" />
+                    <span className="font-display font-bold text-xs text-white uppercase">{tierLabel} Active</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-yellow-200 font-mono text-xs">
+                    <Clock className="w-3 h-3" />
+                    <span>{vipStatus.remaining_days}d left</span>
+                  </div>
+                </div>
+              ) : !loadingVip ? (
+                <div className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                  <Star className="w-3.5 h-3.5 text-zinc-500" />
+                  <span className="text-zinc-500 text-xs font-mono">No active VIP subscription</span>
+                </div>
+              ) : null}
             </div>
           ) : (
             <button

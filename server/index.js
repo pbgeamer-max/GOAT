@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.js";
 import statsRoutes from "./routes/stats.js";
 import serverRoutes from "./routes/server.js";
 import reportRoutes from "./routes/report.js";
+import storeRoutes from "./routes/store.js";
 import { startDiscordBot } from "./services/bot.js";
 import { startRconMonitor } from "./services/rconMonitor.js";
 
@@ -61,6 +62,7 @@ app.use(authRoutes);
 app.use(statsRoutes);
 app.use(serverRoutes);
 app.use(reportRoutes);
+app.use(storeRoutes);
 
 // Serve Frontend Static Assets (if built)
 const distPath = path.resolve(__dirname, "../dist");

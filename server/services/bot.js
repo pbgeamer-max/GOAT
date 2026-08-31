@@ -16,8 +16,10 @@ import {
   addVoiceTime,
   logVoiceSession,
   getVoiceLeaderboard,
+  getExpiredVips,
+  revokeVipSubscription,
 } from "../database/db.js";
-import { setRustServerBooster } from "./rcon.js";
+import { setRustServerBooster, setRustServerVip } from "./rcon.js";
 import { config } from "../config.js";
 import dgram from "dgram";
 
@@ -1004,13 +1006,15 @@ export async function startDiscordBot() {
     setupVoiceTracking();
     await syncExistingBoosters();
     await syncVerifiedRoles();
+    await checkAndExpireVips();
     await scanActiveVoiceMembers();
     startVoiceFlushLoop();
     await tick();
 
     setInterval(tick, config.timing.pollIntervalMs);
     setInterval(() => syncVoiceChannel(), config.timing.voiceSyncMs);
-    setInterval(() => syncVerifiedRoles(), 120000); // Audit and auto-revoke every 2 minutes
+    setInterval(() => syncVerifiedRoles(), 120000); // Audit and auto-revoke unlinked members every 2 minutes
+    setInterval(() => checkAndExpireVips(), 300000); // Check and auto-expire 30-day VIP subscriptions every 5 minutes
   });
 
   botClient.on(Events.Error, (err) => {
@@ -1133,6 +1137,127 @@ export async function sendPlayerReport(reportData) {
   } catch (err) {
     console.error("[Bot Report Error]:", err);
     return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Grant VIP Discord Role & Send Congratulations DM
+ */
+export async function grantDiscordVipRole(discordId, tier = "vip", steamName = "Survivor") {
+  if (!isBotReady || !config.discord.guildId) return { success: false };
+
+  try {
+    const guild = await botClient.guilds.fetch(config.discord.guildId).catch(() => null);
+    if (!guild) return { success: false };
+
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (!member) return { success: false };
+
+    const roleId = config.discord.vipRoleId;
+    if (roleId) {
+      await member.roles.add(roleId).catch(() => {});
+      console.log(`[Bot VIP] 👑 Granted VIP Discord role to ${member.user.tag} (${discordId})`);
+    }
+
+    // Send VIP Welcome Embed DM
+    try {
+      const dmEmbed = new EmbedBuilder()
+        .setTitle(`⭐ Congratulations on Unlocking ${tier.toUpperCase()} Rank!`)
+        .setColor(0xffaa00)
+        .setDescription(
+          `Hey **${member.user.username}** 👋, thank you for supporting **GOAT 5X**!\n\n` +
+          `🎁 **Your Perks are now Active for 30 Days:**\n` +
+          `• 🏰 **Automatic Building Upgrade:** Wood, Stone, Metal, and **HQ (TopTier)**!\n` +
+          `• 📦 **In-Game VIP Kits:** Type \`/kit ${tier.toLowerCase()}\` in-game.\n` +
+          `• ⚡ **Queue Skip:** Instant slot reservation on wipe days.\n` +
+          `• 👑 **Discord VIP Role:** Granted on our community server!\n\n` +
+          `🎮 **Linked Steam:** **${steamName}**\n` +
+          `🌐 **Dashboard:** ${config.baseUrl}`
+        )
+        .setFooter({ text: "GOAT SERVERS • Automated Store & Perks System" })
+        .setTimestamp();
+
+      await member.send({ embeds: [dmEmbed] }).catch(() => {});
+    } catch (_) {}
+
+    return { success: true };
+  } catch (err) {
+    console.error("[Bot VIP Grant Error]:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Revoke VIP Discord Role upon 30-day expiration & Send Expiration Notice DM
+ */
+export async function revokeDiscordVipRole(discordId, tier = "vip") {
+  if (!isBotReady || !config.discord.guildId) return { success: false };
+
+  try {
+    const guild = await botClient.guilds.fetch(config.discord.guildId).catch(() => null);
+    if (!guild) return { success: false };
+
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (!member) return { success: false };
+
+    const roleId = config.discord.vipRoleId;
+    if (roleId && member.roles.cache.has(roleId)) {
+      await member.roles.remove(roleId).catch(() => {});
+      console.log(`[Bot VIP] 🔒 Revoked expired VIP Discord role from ${member.user.tag} (${discordId})`);
+    }
+
+    // Send VIP Expiry Notice DM
+    try {
+      const dmEmbed = new EmbedBuilder()
+        .setTitle("ℹ️ Your GOAT VIP Membership has Expired")
+        .setColor(0x888888)
+        .setDescription(
+          `Hey **${member.user.username}**, your 30-day **${tier.toUpperCase()}** membership on **GOAT 5X** has concluded.\n\n` +
+          `Thank you so much for your support! To renew your perks and re-enable **HQ Building Upgrade & VIP Kits**, visit our official store at:\n` +
+          `👉 **[Visit GOAT Store](${config.baseUrl}/#store)**`
+        )
+        .setFooter({ text: "GOAT SERVERS" });
+
+      await member.send({ embeds: [dmEmbed] }).catch(() => {});
+    } catch (_) {}
+
+    return { success: true };
+  } catch (err) {
+    console.error("[Bot VIP Revoke Error]:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Automated 30-day VIP Expiration Daemon
+ * Automatically revokes in-game Oxide groups, upgrade.hq, and Discord VIP role when 30 days pass
+ */
+export async function checkAndExpireVips() {
+  if (!isBotReady) return;
+
+  try {
+    const expiredList = getExpiredVips();
+    if (!expiredList || expiredList.length === 0) return;
+
+    console.log(`[VIP Expiry Daemon] 🔍 Found ${expiredList.length} expired VIP subscription(s). Revoking perks...`);
+
+    for (const user of expiredList) {
+      const tier = user.vip_tier || "vip";
+      console.log(`[VIP Expiry Daemon] 🔒 Expiring VIP for SteamID: ${user.steam_id} (${user.steam_name})`);
+
+      // 1. Revoke in-game Oxide VIP group & HQ building permission via RCON
+      await setRustServerVip(user.steam_id, false, tier, user.steam_name);
+
+      // 2. Revoke Discord VIP role if user has linked Discord
+      if (user.discord_id) {
+        await revokeDiscordVipRole(user.discord_id, tier);
+      }
+
+      // 3. Update Firebase Firestore database
+      revokeVipSubscription(user.steam_id);
+    }
+  } catch (err) {
+    console.error("[VIP Expiry Daemon Error]:", err.message);
   }
 }
 

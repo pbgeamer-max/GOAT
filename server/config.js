@@ -60,6 +60,7 @@ export const config = {
     botToken: clean(process.env.DISCORD_TOKEN || process.env.DISCORD_BOT_TOKEN, ""),
     guildId: clean(process.env.GUILD_ID, "1317494515069747240"),
     verifiedRoleId: clean(process.env.DISCORD_VERIFIED_ROLE_ID, "1540336062801649814"),
+    vipRoleId: clean(process.env.DISCORD_VIP_ROLE_ID || process.env.VIP_ROLE_ID, ""),
     logChannelId: clean(process.env.DISCORD_LOG_CHANNEL_ID || process.env.STATUS_CHANNEL_ID, "1540348220310552584"),
     statusChannelId: clean(process.env.STATUS_CHANNEL_ID, ""),
     voiceChannelId: clean(process.env.VOICE_CHANNEL_ID, ""),

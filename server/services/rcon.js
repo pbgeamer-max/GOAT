@@ -188,6 +188,55 @@ export async function setRustServerBooster(steamId, isBooster = true, steamName 
 }
 
 /**
+ * Set or Revoke in-game VIP Rank & HQ Building Upgrade (30 Days)
+ */
+export async function setRustServerVip(steamId, isVip = true, tier = "vip", steamName = "Survivor") {
+  if (!steamId) return { success: false, error: "Missing SteamID" };
+
+  const cleanSteamId = String(steamId).trim();
+  const cleanTier = String(tier).toLowerCase().trim() || "vip";
+  console.log(`[RCON VIP] 👑 Processing VIP status [${isVip ? "GRANT" : "REVOKE"}] Tier: ${cleanTier} for SteamID: ${cleanSteamId} (${steamName})`);
+
+  try {
+    if (isVip) {
+      // 1. Add player to Oxide VIP group
+      await executeRconCommand(`o.usergroup add ${cleanSteamId} ${cleanTier}`);
+
+      // 2. Grant HQ Building Upgrade permission
+      await executeRconCommand(`o.grant user ${cleanSteamId} upgrade.hq`);
+      await executeRconCommand(`o.grant user ${cleanSteamId} buildinggrade.toptier`).catch(() => {});
+      await executeRconCommand(`o.grant user ${cleanSteamId} bgrade.4`).catch(() => {});
+
+      // 3. Grant Kit permission
+      await executeRconCommand(`o.grant user ${cleanSteamId} goatkitsui.${cleanTier}`).catch(() => {});
+
+      // 4. In-Game Chat Announcement
+      await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} unlocked ${cleanTier.toUpperCase()} & HQ Building Upgrade (30 Days)!`).catch(() => {});
+
+      console.log(`[RCON VIP] ✅ Granted ${cleanTier} + upgrade.hq for [${cleanSteamId}] (${steamName})`);
+    } else {
+      // 1. Remove player from Oxide VIP group
+      await executeRconCommand(`o.usergroup remove ${cleanSteamId} ${cleanTier}`);
+
+      // 2. Revoke HQ Building Upgrade permission
+      await executeRconCommand(`o.revoke user ${cleanSteamId} upgrade.hq`);
+      await executeRconCommand(`o.revoke user ${cleanSteamId} buildinggrade.toptier`).catch(() => {});
+      await executeRconCommand(`o.revoke user ${cleanSteamId} bgrade.4`).catch(() => {});
+
+      // 3. Revoke Kit permission
+      await executeRconCommand(`o.revoke user ${cleanSteamId} goatkitsui.${cleanTier}`).catch(() => {});
+
+      console.log(`[RCON VIP] 🔒 Revoked ${cleanTier} + upgrade.hq for [${cleanSteamId}] (${steamName})`);
+    }
+
+    return { success: true, isVip, tier: cleanTier };
+  } catch (err) {
+    console.error(`[RCON VIP] ❌ Failed VIP RCON command for "${cleanSteamId}":`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Sync a single booster via RCON
  */
 export async function syncBoosterToRust(steamId, steamName = "Survivor") {

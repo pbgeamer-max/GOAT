@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import {
@@ -18,7 +18,24 @@ import {
   Rocket,
   LogOut,
   RefreshCw,
+  Crown,
+  Star,
 } from "lucide-react";
+
+interface VipStatus {
+  is_vip: boolean;
+  vip_tier: string | null;
+  vip_expires_at: string | null;
+  remaining_days: number;
+}
+
+const TIER_LABELS: Record<string, string> = {
+  god: "⚡ GOD",
+  mvp: "💎 MVP",
+  vip: "⭐ VIP",
+  guns: "🔫 GUNS",
+  builder: "🏗️ BUILDER",
+};
 
 export const UserProfileModal: React.FC = () => {
   const { user, isProfileOpen, closeProfile, linkDiscord, claimKit, logout } = useAuth();
@@ -26,6 +43,15 @@ export const UserProfileModal: React.FC = () => {
   const [claiming, setClaiming] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
+
+  useEffect(() => {
+    if (!isProfileOpen || !user) return;
+    fetch("/api/user/vip-status", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.success) setVipStatus(data); })
+      .catch(() => {});
+  }, [isProfileOpen, user]);
 
   // Cooldown countdown timer
   React.useEffect(() => {
@@ -178,6 +204,34 @@ export const UserProfileModal: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* VIP Subscription Status Card */}
+        {vipStatus?.is_vip && (
+          <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-yellow-900/30 to-amber-900/10 border border-yellow-500/40 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-yellow-500/15 border border-yellow-500/30 text-yellow-400">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs font-mono font-bold uppercase text-yellow-400/80">ACTIVE VIP SUBSCRIPTION</div>
+                <div className="text-sm font-display font-bold text-white">
+                  {TIER_LABELS[vipStatus.vip_tier?.toLowerCase() || "vip"]} — HQ Building Upgrade Unlocked
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className="px-2.5 py-1 rounded-lg bg-yellow-500/20 text-yellow-300 text-xs font-bold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                {vipStatus.remaining_days}d Remaining
+              </span>
+              {vipStatus.vip_expires_at && (
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  Expires: {new Date(vipStatus.vip_expires_at).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Highlights: Booster Status & Voice Call Hours */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
