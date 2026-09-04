@@ -26,6 +26,11 @@ export interface UserProfile {
   discord_avatar?: string | null;
   is_linked: boolean;
   is_booster?: boolean;
+  is_vip?: boolean;
+  vip_tier?: string | null;
+  vip_expires_at?: string | null;
+  vip_has_hq?: boolean;
+  voice_time_seconds?: number;
   role_granted: number;
   kit_granted: number;
   linked_at?: string;
@@ -41,7 +46,7 @@ interface AuthContextType {
   loginWithSteam: () => void;
   linkDiscord: () => void;
   logout: () => void;
-  claimKit: () => Promise<{ success: boolean; message?: string; error?: string }>;
+  claimKit: () => Promise<{ success: boolean; message?: string; error?: string; remainingSeconds?: number }>;
   refreshUser: () => Promise<void>;
 }
 

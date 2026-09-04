@@ -10,11 +10,13 @@ import { grantDiscordVipRole, revokeDiscordVipRole } from "../services/bot.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const kitsFilePath = path.resolve(__dirname, "../../data/kits.json");
+const tabsFilePath = path.resolve(__dirname, "../../data/tabs.json");
 
 let inMemoryKits = null;
+let inMemoryTabs = null;
 
 function loadKits() {
-  if (inMemoryKits && inMemoryKits.length > 0) return inMemoryKits;
+  if (inMemoryKits !== null) return inMemoryKits;
   try {
     if (fs.existsSync(kitsFilePath)) {
       const raw = fs.readFileSync(kitsFilePath, "utf-8");
@@ -27,12 +29,32 @@ function loadKits() {
   return [];
 }
 
+function loadTabs() {
+  if (inMemoryTabs !== null && inMemoryTabs.length > 0) return inMemoryTabs;
+  try {
+    if (fs.existsSync(tabsFilePath)) {
+      const raw = fs.readFileSync(tabsFilePath, "utf-8");
+      inMemoryTabs = JSON.parse(raw);
+      if (Array.isArray(inMemoryTabs) && inMemoryTabs.length > 0) return inMemoryTabs;
+    }
+  } catch (err) {
+    console.error("[Store] Failed to read tabs.json:", err.message);
+  }
+  // Fallback: extract unique TabNames from current kits
+  const kits = loadKits();
+  const tabs = [...new Set(kits.map((k) => k.TabName).filter(Boolean))];
+  if (tabs.length > 0) {
+    inMemoryTabs = tabs;
+    return tabs;
+  }
+  return ["VIP", "ALL KITS", "RESOURCES", "WEAPONS", "GEMS"];
+}
+
 const router = express.Router();
 
 /**
  * POST /api/store-webhook
  * Automated Webhook for Tebex / Store purchases.
- * Automatically grants in-game VIP group, HQ building upgrade, and Discord VIP role for 30 days.
  */
 router.post("/api/store-webhook", async (req, res) => {
   try {
@@ -40,12 +62,10 @@ router.post("/api/store-webhook", async (req, res) => {
     const secret = req.headers["x-store-secret"] || body.secret;
     const expectedSecret = process.env.STORE_WEBHOOK_SECRET || "goat-store-webhook-secret-2026";
 
-    // Optional secret verification if configured
     if (process.env.STORE_WEBHOOK_SECRET && secret !== expectedSecret) {
       return res.status(403).json({ success: false, error: "Invalid webhook secret" });
     }
 
-    // Extract Steam ID and package info (supports Tebex webhook schemas & direct API calls)
     const steamId =
       body.steam_id ||
       body.steamId ||
@@ -66,30 +86,18 @@ router.post("/api/store-webhook", async (req, res) => {
 
     const durationDays = parseInt(body.duration_days || body.days, 10) || 30;
 
-    // Check if user is in database
     const user = getUser(steamId) || { steam_id: steamId, steam_name: body.username || "Survivor" };
     const steamName = user.steam_name || body.username || "Survivor";
 
-    // 1. Grant in-game VIP group & HQ Building upgrade via RCON
     const rconRes = await setRustServerVip(steamId, true, tier, steamName);
-
-    // 2. Save in database with exact 30-day expiration timestamp
     grantVipSubscription(steamId, tier, durationDays, user.discord_id);
 
-    // 3. Grant Discord VIP role if user is linked
     if (user.discord_id) {
       await grantDiscordVipRole(user.discord_id, tier, steamName);
     }
 
     console.log(`[Store Webhook] 🚀 Activated 30-day ${tier.toUpperCase()} for ${steamName} (${steamId})`);
-
-    res.json({
-      success: true,
-      message: `Activated 30-day ${tier.toUpperCase()} for ${steamName} (${steamId})`,
-      tier,
-      durationDays,
-      rconResult: rconRes,
-    });
+    res.json({ success: true, message: `Activated 30-day ${tier.toUpperCase()} for ${steamName} (${steamId})`, tier, durationDays, rconResult: rconRes });
   } catch (err) {
     console.error("[Store Webhook Error]:", err);
     res.status(500).json({ success: false, error: err.message });
@@ -98,7 +106,6 @@ router.post("/api/store-webhook", async (req, res) => {
 
 /**
  * GET /api/user/vip-status
- * Check current authenticated user's VIP perks and remaining days
  */
 router.get("/api/user/vip-status", (req, res) => {
   try {
@@ -107,15 +114,12 @@ router.get("/api/user/vip-status", (req, res) => {
     }
 
     const user = getUser(req.user.steam_id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
     let remainingDays = 0;
     if (user.is_vip && user.vip_expires_at) {
       const exp = new Date(user.vip_expires_at).getTime();
-      const diffMs = exp - Date.now();
-      remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      remainingDays = Math.max(0, Math.ceil((exp - Date.now()) / (1000 * 60 * 60 * 24)));
     }
 
     res.json({
@@ -133,11 +137,12 @@ router.get("/api/user/vip-status", (req, res) => {
 
 /**
  * POST /api/sync-kits
- * Real-time endpoint called by GoatKitsUI.cs whenever kits are created/updated in-game
+ * Real-time endpoint called by GoatKitsUI.cs whenever kits are created/updated/deleted in-game.
+ * Receives both `tabs` (string[]) and `kits` (KitModel[]) and persists them.
  */
 router.post("/api/sync-kits", (req, res) => {
   try {
-    const { secret, kits } = req.body || {};
+    const { secret, tabs, kits } = req.body || {};
     const expectedSecret = process.env.API_SECRET || "goat-stats-sync-secret";
 
     if (secret && secret !== expectedSecret && req.headers["x-sync-secret"] !== expectedSecret) {
@@ -145,12 +150,18 @@ router.post("/api/sync-kits", (req, res) => {
     }
 
     if (Array.isArray(kits)) {
+      // Save kits
       inMemoryKits = kits;
-      try {
-        fs.writeFileSync(kitsFilePath, JSON.stringify(kits, null, 2), "utf-8");
-      } catch (_) {}
-      console.log(`[Store] 📦 Synced ${kits.length} live kits from Rust server!`);
-      return res.json({ success: true, count: kits.length });
+      try { fs.writeFileSync(kitsFilePath, JSON.stringify(kits, null, 2), "utf-8"); } catch (_) {}
+
+      // Save tabs if provided
+      if (Array.isArray(tabs)) {
+        inMemoryTabs = tabs;
+        try { fs.writeFileSync(tabsFilePath, JSON.stringify(tabs, null, 2), "utf-8"); } catch (_) {}
+      }
+
+      console.log(`[Store] 📦 Synced ${kits.length} kits + ${(tabs || []).length} tabs from Rust server!`);
+      return res.json({ success: true, count: kits.length, tabs: (tabs || []).length });
     }
 
     res.status(400).json({ success: false, error: "Kits array expected" });
@@ -162,15 +173,17 @@ router.post("/api/sync-kits", (req, res) => {
 
 /**
  * GET /api/kits
- * Returns the current live kits list for the web store
+ * Returns the current live kits list + tabs for the web store
  */
 router.get("/api/kits", (req, res) => {
   try {
     const kits = loadKits();
+    const tabs = loadTabs();
     res.json({
       success: true,
-      kits: kits,
-      ticketUrl: config.discord.inviteUrl || "https://discord.gg/7uRsxfknSG"
+      kits,
+      tabs,
+      ticketUrl: config.discord?.inviteUrl || "https://discord.gg/7uRsxfknSG"
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

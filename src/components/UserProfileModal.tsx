@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, PlayerStats } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
 import {
   X,
@@ -64,7 +64,7 @@ export const UserProfileModal: React.FC = () => {
 
   if (!isProfileOpen || !user) return null;
 
-  const stats = user.stats || {};
+  const stats: PlayerStats = user.stats || { steam_id: user.steam_id };
   const playtimeHours = Math.round((stats.playtime_seconds || 0) / 3600);
   const voiceSeconds = user.voice_time_seconds || 0;
   const voiceHours = Math.floor(voiceSeconds / 3600);

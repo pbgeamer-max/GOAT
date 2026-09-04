@@ -4,8 +4,9 @@ dist
 .env
 .env.local
 *.log
-data/
+data/*
 !data/kits.json
+!data/tabs.json
 *.code-workspace
 serviceAccountKey.json
 server/database/serviceAccountKey.json

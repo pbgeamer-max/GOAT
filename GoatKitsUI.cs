@@ -734,34 +734,45 @@ namespace Oxide.Plugins
 
         private void SyncKitsToWeb()
         {
-            if (kitsData == null || kitsData.Kits == null || kitsData.Kits.Count == 0) return;
+            if (kitsData == null || kitsData.Kits == null) return;
             try
             {
                 var payload = new Dictionary<string, object>
                 {
-                    { "secret", config.ApiSecret },
+                    { "secret", !string.IsNullOrEmpty(config.ApiSecret) ? config.ApiSecret : "goat-stats-sync-secret" },
+                    { "tabs", kitsData.Tabs ?? new List<string>() },
                     { "kits", kitsData.Kits }
                 };
 
                 string json = JsonConvert.SerializeObject(payload);
+                string endpoint = !string.IsNullOrEmpty(config.ApiEndpoint) 
+                    ? config.ApiEndpoint 
+                    : "https://rustgoat.com/api/sync-kits";
 
                 webrequest.Enqueue(
-                    config.ApiEndpoint,
+                    endpoint,
                     json,
                     (code, response) =>
                     {
                         if (code == 200)
                         {
-                            Puts($"[GoatKitsUI] Successfully synced {kitsData.Kits.Count} kits to website store!");
+                            Puts($"[GoatKitsUI] 🚀 Successfully synced {kitsData.Kits.Count} kits & {(kitsData.Tabs?.Count ?? 0)} categories to website store!");
+                        }
+                        else
+                        {
+                            Puts($"[GoatKitsUI] Web sync warning: HTTP {code} from {endpoint}");
                         }
                     },
                     this,
                     RequestMethod.POST,
                     new Dictionary<string, string> { { "Content-Type", "application/json" } },
-                    6f
+                    8f
                 );
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Puts($"[GoatKitsUI] Web sync exception: {ex.Message}");
+            }
         }
 
         private void ShowNoticePopup(BasePlayer player, string title, string urlText, string subtitle, string colorHex)

@@ -20,6 +20,7 @@ interface ServerContextType {
   steamConnectUrl: string;
   nextWipeDate: string;
   wipeCycle: string;
+  wipeSchedule?: { nextWipeDate: string; cycle: string };
   serverName: string;
 }
 
@@ -97,6 +98,7 @@ export const ServerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         steamConnectUrl,
         nextWipeDate,
         wipeCycle,
+        wipeSchedule: { nextWipeDate, cycle: wipeCycle },
         serverName,
       }}
     >
