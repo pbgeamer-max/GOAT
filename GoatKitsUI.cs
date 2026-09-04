@@ -68,6 +68,8 @@ namespace Oxide.Plugins
         private const string ColorPriceBar   = "0.09 0.10 0.13 0.96";
         private const string ColorTabActive  = "0.00 0.52 1.00 1.00";
         private const string ColorTabGems    = "0.88 0.65 0.10 1.00";
+        private const string ColorGoldYellow = "1.00 0.82 0.12 1.00";
+        private const string ColorGoldAmber  = "0.96 0.65 0.14 1.00";
         private const string ColorTabIdle    = "0.06 0.07 0.10 0.92";
         private const string ColorTabTextDim = "0.50 0.53 0.58 1.00";
 
@@ -1102,7 +1104,7 @@ namespace Oxide.Plugins
                 {
                     acc.Gems += config.GemsPerHour;
                     acc.LastGemRewardTimestamp = now;
-                    SendReply(p, $"<color=#F5A623>💎 [HOURLY REWARD]</color> You received <color=#2ECC71>+{config.GemsPerHour} GEMS</color>! Balance: <color=#0084FF>{acc.Gems}</color>");
+                    SendReply(p, $"<color=#F1C40F>◆ [HOURLY REWARD]</color> You received <color=#F1C40F>+{config.GemsPerHour} GEMS</color>! Balance: <color=#F1C40F>{acc.Gems}</color>");
                 }
             }
             SavePlayerData();
@@ -1627,7 +1629,7 @@ namespace Oxide.Plugins
 
                 baseElements.Add(new CuiLabel
                 {
-                    Text = { Text = $"◆ {acc.Gems:N0} (+{config.GemsPerHour}/h)", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = "#F5A623" },
+                    Text = { Text = $"<color=#F1C40F>◆ {acc.Gems:N0}</color> <color=#F5A623>(+{config.GemsPerHour}/h)</color>", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorGoldYellow },
                     RectTransform = { AnchorMin = "0.08 0.100", AnchorMax = "0.92 0.140" }
                 }, "SidebarPanel");
 
@@ -1717,14 +1719,14 @@ namespace Oxide.Plugins
                 if (xMax > 0.60f) break;
 
                 bool isGemsTab = tabName.IndexOf("GEMS", StringComparison.OrdinalIgnoreCase) >= 0;
-                string tabColor = isGemsTab ? ColorTabGems : (isSelected ? ColorTabActive : ColorTabIdle);
-                string tabTextColor = isGemsTab ? ColorHeaderText : (isSelected ? ColorTextWhite : ColorTabTextDim);
+                string tabColor = isGemsTab ? (isSelected ? ColorGoldAmber : ColorTabGems) : (isSelected ? ColorActiveBlue : ColorTabIdle);
+                string tabTextColor = isGemsTab ? "0.06 0.06 0.07 1.00" : (isSelected ? ColorTextWhite : ColorTabTextDim);
 
                 elements.Add(new CuiButton
                 {
                     Button = { Color = tabColor, Command = $"goatui.switchtab {i}" },
                     RectTransform = { AnchorMin = $"{xMin} 0.18", AnchorMax = $"{xMax} 0.82" },
-                    Text = { Text = (isGemsTab ? "💎 " : "") + tabName.ToUpperInvariant(), FontSize = 11, Align = TextAnchor.MiddleCenter, Color = tabTextColor, Font = "robotocondensed-bold.ttf" }
+                    Text = { Text = (isGemsTab ? "<color=#F1C40F>◆</color> " : "") + tabName.ToUpperInvariant(), FontSize = 11, Align = TextAnchor.MiddleCenter, Color = tabTextColor, Font = "robotocondensed-bold.ttf" }
                 }, LayerTopBar);
             }
 
@@ -1875,6 +1877,15 @@ namespace Oxide.Plugins
                 RectTransform = { AnchorMin = "0.05 0", AnchorMax = "0.95 1" }
             }, $"{cardName}_H");
 
+            if (kit.Currency.Equals("GEMS", StringComparison.OrdinalIgnoreCase) || kit.PriceText.IndexOf("GEMS", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                elements.Add(new CuiLabel
+                {
+                    Text = { Text = "<color=#F1C40F>◆</color>", FontSize = isTopRow ? 14 : 12, Align = TextAnchor.MiddleRight, Color = ColorGoldYellow },
+                    RectTransform = { AnchorMin = "0.80 0", AnchorMax = "0.96 1" }
+                }, $"{cardName}_H");
+            }
+
             float gridYMin = isTopRow ? 0.075f : 0.150f;
             float gridYMax = isTopRow ? 0.932f : 0.865f;
             elements.Add(new CuiPanel
@@ -1966,7 +1977,14 @@ namespace Oxide.Plugins
             }
             else if (kit.Currency.Equals("GEMS", StringComparison.OrdinalIgnoreCase) && kit.Price > 0)
             {
-                btnText = $"💎 {kit.Price:N0} GEMS";
+                btnText = $"<color=#F1C40F>◆</color> {kit.Price:N0} GEMS";
+                btnColor = ColorTabGems;
+            }
+            else if (kit.PriceText.IndexOf("GEMS", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                string cleanGems = kit.PriceText.Replace("💎", "").Replace("◆", "").Trim();
+                btnText = $"<color=#F1C40F>◆</color> {cleanGems}";
+                btnColor = ColorTabGems;
             }
 
             if (kit.LockType == "LINKED")
@@ -2141,10 +2159,12 @@ namespace Oxide.Plugins
                 float yMin = yMax - catH;
 
                 string rowId = $"ShopCat_{i}";
+                bool isGemsCat = cat.key.Equals("GEMS", StringComparison.OrdinalIgnoreCase);
+                string catBtnColor = isSel ? (isGemsCat ? ColorTabGems : ColorActiveBlue) : "0.11 0.12 0.15 0.95";
 
                 elements.Add(new CuiButton
                 {
-                    Button = { Color = isSel ? ColorActiveBlue : "0.11 0.12 0.15 0.95", Command = $"goatui.shop.tab {cat.key}" },
+                    Button = { Color = catBtnColor, Command = $"goatui.shop.tab {cat.key}" },
                     RectTransform = { AnchorMin = $"0 {yMin}", AnchorMax = $"1 {yMax}" },
                     Text = { Text = "" }
                 }, "ShopNavPanel", rowId);
@@ -2169,16 +2189,17 @@ namespace Oxide.Plugins
                 {
                     elements.Add(new CuiLabel
                     {
-                        Text = { Text = cat.emoji, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "#F5A623" },
+                        Text = { Text = isGemsCat ? "<color=#F1C40F>◆</color>" : cat.emoji, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = isGemsCat ? ColorGoldYellow : ColorTextWhite },
                         RectTransform = { AnchorMin = "0.07 0", AnchorMax = "0.29 1" }
                     }, rowId);
                 }
 
-                string rowTextColor = cat.key.Equals("GEMS", StringComparison.OrdinalIgnoreCase) ? "#F5A623" : ColorTextWhite;
+                string rowTextColor = isGemsCat ? ColorGoldYellow : ColorTextWhite;
+                string rowDisplayText = isGemsCat ? $"<color=#F1C40F>{cat.display}</color>" : cat.display;
 
                 elements.Add(new CuiLabel
                 {
-                    Text = { Text = cat.display, FontSize = 12, Align = TextAnchor.MiddleLeft, Color = rowTextColor, Font = "robotocondensed-bold.ttf" },
+                    Text = { Text = rowDisplayText, FontSize = 12, Align = TextAnchor.MiddleLeft, Color = rowTextColor, Font = "robotocondensed-bold.ttf" },
                     RectTransform = { AnchorMin = "0.30 0", AnchorMax = "0.97 1" }
                 }, rowId);
             }
@@ -2237,7 +2258,7 @@ namespace Oxide.Plugins
                     {
                         elements.Add(new CuiLabel
                         {
-                            Text = { Text = "◆", FontSize = 13, Align = TextAnchor.MiddleCenter, Color = "#F5A623" },
+                            Text = { Text = "<color=#F1C40F>◆</color>", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = ColorGoldYellow },
                             RectTransform = { AnchorMin = "0.04 0.76", AnchorMax = "0.20 0.97" }
                         }, cellId);
                     }
@@ -2256,11 +2277,12 @@ namespace Oxide.Plugins
                         });
                     }
 
-                    string priceText = isItemGems ? $"{item.Price:N0} GEMS" : $"{item.Price:N0} RP";
+                    string priceText = isItemGems ? $"<color=#F1C40F>◆ {item.Price:N0} GEMS</color>" : $"{item.Price:N0} RP";
+                    string priceColor = isItemGems ? ColorGoldYellow : "0.92 0.93 0.95 1.0";
                     elements.Add(new CuiLabel
                     {
-                        Text = { Text = priceText, FontSize = 10, Align = TextAnchor.MiddleRight, Color = "0.92 0.93 0.95 1.0", Font = "robotocondensed-bold.ttf" },
-                        RectTransform = { AnchorMin = "0.30 0.03", AnchorMax = "0.95 0.17" }
+                        Text = { Text = priceText, FontSize = 10, Align = TextAnchor.MiddleRight, Color = priceColor, Font = "robotocondensed-bold.ttf" },
+                        RectTransform = { AnchorMin = "0.20 0.03", AnchorMax = "0.95 0.17" }
                     }, cellId);
 
                     if (item.Amount > 1)
@@ -2837,19 +2859,19 @@ namespace Oxide.Plugins
             // ── TIMING ROW: Cooldown │ Wipe Lock │ Max Uses ──────────────────────────────
             elements.Add(new CuiLabel
             {
-                Text = { Text = "⏱ COOLDOWN (HRS)", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                Text = { Text = "⏱ COOLDOWN (HRS)", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = ColorTextMuted, Font = "robotocondensed-bold.ttf" },
                 RectTransform = { AnchorMin = "0.05 0.468", AnchorMax = "0.36 0.500" }
             }, "ModalBox");
 
             elements.Add(new CuiLabel
             {
-                Text = { Text = "🔒 WIPE LOCK (HRS)", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                Text = { Text = "🔒 WIPE LOCK (HRS)", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = ColorTextMuted, Font = "robotocondensed-bold.ttf" },
                 RectTransform = { AnchorMin = "0.37 0.468", AnchorMax = "0.67 0.500" }
             }, "ModalBox");
 
             elements.Add(new CuiLabel
             {
-                Text = { Text = "🎯 MAX USES / WIPE", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                Text = { Text = "🎯 MAX USES / WIPE", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = ColorTextMuted, Font = "robotocondensed-bold.ttf" },
                 RectTransform = { AnchorMin = "0.68 0.468", AnchorMax = "0.95 0.500" }
             }, "ModalBox");
 
@@ -2917,7 +2939,7 @@ namespace Oxide.Plugins
 
             elements.Add(new CuiLabel
             {
-                Text = { Text = $"📦 KIT ITEMS PREVIEW  [ TOTAL: <color=#2ECC71>{draft.Items.Count}</color> ITEMS LOADED ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                Text = { Text = $"📦 KIT ITEMS PREVIEW  [ TOTAL: <color=#2ECC71>{draft.Items.Count}</color> ITEMS LOADED ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextMuted, Font = "robotocondensed-bold.ttf" },
                 RectTransform = { AnchorMin = "0.015 0.89", AnchorMax = "0.985 0.98" }
             }, "ItemsPreviewContainer");
 
