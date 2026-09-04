@@ -79,13 +79,6 @@ export const GemsStoreSection: React.FC<GemsStoreSectionProps> = () => {
             ? "bg-orange-600 text-white border-orange-500"
             : "";
 
-          const accentColor = isMaxValue
-            ? "text-yellow-400"
-            : isBestValue
-            ? "text-green-400"
-            : isPopular
-            ? "text-orange-400"
-            : "text-gray-300";
 
           const imgDropShadow = isMaxValue
             ? "drop-shadow-[0_0_20px_rgba(234,179,8,0.35)]"
@@ -137,32 +130,7 @@ export const GemsStoreSection: React.FC<GemsStoreSectionProps> = () => {
                     </h3>
                   </div>
 
-                  {/* Bonus value (or fixed height spacer) */}
-                  <div className="text-center mt-1 h-5 flex items-center justify-center">
-                    {pkg.bonusValue ? (
-                      <span className={`text-xs sm:text-sm font-semibold ${accentColor}`}>
-                        {pkg.bonusValue}
-                      </span>
-                    ) : (
-                      <span className="invisible text-xs">-</span>
-                    )}
-                  </div>
 
-                  {/* Available On */}
-                  <div className="mt-4">
-                    <p className="text-gray-400 text-xs mb-2 font-medium">Available on:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="bg-green-600/20 text-green-400 border-green-600/50 text-[10px] font-bold px-2 py-0.5 rounded border">
-                        3x
-                      </span>
-                      <span className="bg-blue-600/20 text-blue-400 border-blue-600/50 text-[10px] font-bold px-2 py-0.5 rounded border">
-                        5x
-                      </span>
-                      <span className="bg-red-600/20 text-red-400 border-red-600/50 text-[10px] font-bold px-2 py-0.5 rounded border">
-                        10x
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Price & Button */}
