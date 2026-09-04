@@ -2,259 +2,289 @@ import WebSocket from "ws";
 import { config } from "../config.js";
 import { updateKitStatus, updateBoosterStatus } from "../database/db.js";
 
-// Sequential command queue to prevent multiple concurrent WebSockets hammering Rust RCON
-let rconQueue = Promise.resolve();
+// ─────────────────────────────────────────────────────────────────────────────
+//  Persistent RCON Connection Manager
+//  Opens ONE WebSocket to the Rust server and keeps it alive.
+//  All commands are serialized through a queue so they never overlap.
+// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Execute an arbitrary RCON command sequentially on the Rust server using WebRcon
- */
-export function executeRconCommand(command, timeoutMs = 6000) {
-  return new Promise((resolve) => {
-    rconQueue = rconQueue
-      .then(() => _sendRconCommand(command, timeoutMs))
-      .then((res) => {
-        resolve(res);
-        // Small 120ms breathing room between RCON commands to keep socket stable
-        return new Promise((r) => setTimeout(r, 120));
-      })
-      .catch((err) => {
-        resolve({ success: false, error: err.message });
-      });
-  });
+let _ws = null;              // live WebSocket
+let _ready = false;          // connection is open & authenticated
+let _reconnecting = false;   // reconnect already scheduled
+let _pendingResolvers = {};  // { [messageId]: { resolve, timer } }
+let _cmdQueue = [];          // queued commands waiting for connection
+let _processing = false;     // drain guard
+let _idCounter = 1;          // auto-increment message ID
+
+const DELAY_BETWEEN_CMDS  = 150;  // ms between sequential commands
+const RECONNECT_DELAY_MS  = 3000; // ms before reconnect attempt
+const CMD_TIMEOUT_MS      = 8000; // ms before a single command times out
+
+function getRconUrl() {
+  const { ip, rconPort, rconPassword } = config.rust;
+  return `ws://${ip}:${rconPort}/${encodeURIComponent(rconPassword)}`;
 }
 
-function _sendRconCommand(command, timeoutMs) {
-  return new Promise((resolve) => {
-    if (!config.rust.rconPassword) {
-      console.log(`[RCON SIMULATION] Executed command: "${command}"`);
-      return resolve({ success: true, output: "Simulation mode (no RCON password configured)" });
-    }
+function scheduleReconnect() {
+  if (_reconnecting) return;
+  _reconnecting = true;
+  _ready = false;
+  _ws = null;
 
-    const host = config.rust.ip;
-    const port = config.rust.rconPort;
-    const password = config.rust.rconPassword;
-    const url = `ws://${host}:${port}/${encodeURIComponent(password)}`;
+  // Reject everything currently pending so callers don't hang
+  for (const [id, { resolve, timer }] of Object.entries(_pendingResolvers)) {
+    clearTimeout(timer);
+    resolve({ success: false, error: "RCON reconnecting – command dropped" });
+  }
+  _pendingResolvers = {};
 
-    let ws = null;
-    let timer = null;
-    let resolved = false;
-    const messageId = Math.floor(Math.random() * 100000) + 1;
+  console.log(`[RCON] Reconnecting in ${RECONNECT_DELAY_MS / 1000}s…`);
+  setTimeout(() => {
+    _reconnecting = false;
+    connectRcon();
+  }, RECONNECT_DELAY_MS);
+}
 
-    const cleanup = () => {
-      if (timer) clearTimeout(timer);
-      if (ws) {
-        try {
-          ws.close();
-        } catch (_) {}
-      }
-    };
+function connectRcon() {
+  if (!config.rust.rconPassword) {
+    console.log("[RCON] No password configured – running in simulation mode.");
+    return;
+  }
 
-    const done = (result) => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      resolve(result);
-    };
+  if (_ws) return; // already connecting or open
 
-    timer = setTimeout(() => {
-      done({ success: false, error: `RCON command timed out after ${timeoutMs}ms` });
-    }, timeoutMs);
+  const url = getRconUrl();
+  console.log(`[RCON] Connecting to ${config.rust.ip}:${config.rust.rconPort}…`);
 
+  try {
+    _ws = new WebSocket(url, { handshakeTimeout: 5000 });
+  } catch (err) {
+    console.error("[RCON] Failed to create WebSocket:", err.message);
+    scheduleReconnect();
+    return;
+  }
+
+  _ws.on("open", () => {
+    console.log("[RCON] ✅ Connected (persistent)");
+    _ready = true;
+    _reconnecting = false;
+    drainQueue();
+  });
+
+  _ws.on("message", (raw) => {
+    let parsed;
     try {
-      ws = new WebSocket(url, { handshakeTimeout: 4000 });
-
-      ws.on("open", () => {
-        const payload = JSON.stringify({
-          Identifier: messageId,
-          Message: command,
-          Name: "GOAT-RCON",
-        });
-        ws.send(payload);
-      });
-
-      ws.on("message", (raw) => {
-        try {
-          const parsed = JSON.parse(raw.toString("utf8"));
-          if (parsed && (parsed.Identifier === messageId || parsed.Identifier === -1 || !parsed.Identifier)) {
-            const output = parsed.Message || "";
-            console.log(`[RCON] Executed "${command}" -> Response:`, output.trim().slice(0, 100));
-            done({ success: true, output });
-          }
-        } catch (e) {
-          done({ success: true, output: raw.toString("utf8") });
-        }
-      });
-
-      ws.on("error", (err) => {
-        console.error(`[RCON Error] ${command}:`, err.message);
-        done({ success: false, error: err.message });
-      });
-
-      ws.on("close", () => {
-        if (!resolved) {
-          done({ success: false, error: "Connection closed before receiving response" });
-        }
-      });
-    } catch (err) {
-      done({ success: false, error: err.message });
+      parsed = JSON.parse(raw.toString("utf8"));
+    } catch {
+      return;
     }
+
+    const id = parsed?.Identifier;
+    if (id && _pendingResolvers[id]) {
+      const { resolve, timer } = _pendingResolvers[id];
+      clearTimeout(timer);
+      delete _pendingResolvers[id];
+      resolve({ success: true, output: parsed.Message || "" });
+    }
+  });
+
+  _ws.on("error", (err) => {
+    // ECONNRESET / ECONNREFUSED etc.
+    console.error("[RCON] WebSocket error:", err.message);
+    // Don't double-schedule; close event fires right after error
+  });
+
+  _ws.on("close", (code, reason) => {
+    console.warn(`[RCON] Connection closed (code ${code}). Scheduling reconnect…`);
+    _ready = false;
+    scheduleReconnect();
   });
 }
 
+// Drain the command queue in strict serial order
+async function drainQueue() {
+  if (_processing) return;
+  _processing = true;
+
+  while (_cmdQueue.length > 0) {
+    if (!_ready || !_ws || _ws.readyState !== WebSocket.OPEN) {
+      _processing = false;
+      return; // stop; reconnect will restart drainQueue via open event
+    }
+
+    const { command, resolve } = _cmdQueue.shift();
+    const messageId = _idCounter++ & 0x7fffffff; // wrap at 31-bit positive int
+
+    await new Promise((innerResolve) => {
+      // Timeout guard per command
+      const timer = setTimeout(() => {
+        delete _pendingResolvers[messageId];
+        resolve({ success: false, error: `RCON timeout after ${CMD_TIMEOUT_MS}ms: "${command}"` });
+        innerResolve();
+      }, CMD_TIMEOUT_MS);
+
+      _pendingResolvers[messageId] = {
+        resolve: (result) => {
+          clearTimeout(timer);
+          const output = (result.output || "").trim().slice(0, 120);
+          if (result.success) {
+            console.log(`[RCON] ✔ "${command}" → ${output || "(ok)"}`);
+          } else {
+            console.warn(`[RCON] ✘ "${command}" → ${result.error}`);
+          }
+          resolve(result);
+          innerResolve();
+        },
+        timer,
+      };
+
+      try {
+        _ws.send(JSON.stringify({ Identifier: messageId, Message: command, Name: "GOAT-RCON" }));
+      } catch (err) {
+        clearTimeout(timer);
+        delete _pendingResolvers[messageId];
+        resolve({ success: false, error: err.message });
+        innerResolve();
+      }
+    });
+
+    // Small breathing room to avoid overwhelming Rust's RCON parser
+    if (_cmdQueue.length > 0) {
+      await new Promise((r) => setTimeout(r, DELAY_BETWEEN_CMDS));
+    }
+  }
+
+  _processing = false;
+}
+
 /**
- * Notify the Rust server that a player has linked their Steam and Discord accounts
- * Grants: goatkitsui.linked and adds to group 'linked'
+ * Public API – enqueue an RCON command and await the result.
  */
+export function executeRconCommand(command, _unused = 6000) {
+  if (!config.rust.rconPassword) {
+    console.log(`[RCON SIMULATION] "${command}"`);
+    return Promise.resolve({ success: true, output: "Simulation mode" });
+  }
+
+  // Lazily establish connection on first use
+  if (!_ws && !_reconnecting) connectRcon();
+
+  return new Promise((resolve) => {
+    _cmdQueue.push({ command, resolve });
+    if (_ready) drainQueue();
+  });
+}
+
+// Boot the persistent connection when the module is imported
+connectRcon();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  High-level helpers  (unchanged API surface)
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function notifyRustServerLink(steamId, steamName = "Survivor") {
   if (!steamId) {
-    console.error("[RCON Link] Error: Missing SteamID parameter");
+    console.error("[RCON Link] Error: Missing SteamID");
     return { success: false, error: "Missing SteamID" };
   }
 
-  const cleanSteamId = String(steamId).trim();
-  console.log(`[RCON Link] 📡 Granting GoatKitsUI linked perks to: ${cleanSteamId} (${steamName})`);
+  const id = String(steamId).trim();
+  console.log(`[RCON Link] 📡 Granting linked perks to: ${id} (${steamName})`);
 
   try {
-    // 1. Grant GoatKitsUI linked permission (checked by IsPlayerLinked())
-    const res = await executeRconCommand(`o.grant user ${cleanSteamId} goatkitsui.linked`);
-
-    // 2. Also try oxide.grant fallback if needed
-    if (!res.success || (res.output && res.output.toLowerCase().includes("unknown command"))) {
-      await executeRconCommand(`oxide.grant user ${cleanSteamId} goatkitsui.linked`);
+    const res = await executeRconCommand(`o.grant user ${id} goatkitsui.linked`);
+    if (!res.success || (res.output?.toLowerCase().includes("unknown command"))) {
+      await executeRconCommand(`oxide.grant user ${id} goatkitsui.linked`);
     }
-
-    // 3. Add to Oxide 'linked' group
-    await executeRconCommand(`o.usergroup add ${cleanSteamId} linked`).catch(() => {});
-
-    // 4. In-game broadcast
+    await executeRconCommand(`o.usergroup add ${id} linked`).catch(() => {});
     await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} linked Discord on the website and unlocked /kit discord!`).catch(() => {});
 
-    console.log(`[RCON Link] ✅ Successfully granted goatkitsui.linked for [${cleanSteamId}] (${steamName})`);
-    updateKitStatus(cleanSteamId, 1);
+    console.log(`[RCON Link] ✅ Linked perks granted for [${id}] (${steamName})`);
+    updateKitStatus(id, 1);
     return { success: true, output: "Linked perks granted" };
   } catch (err) {
-    console.error(`[RCON Link] ❌ Failed to link player "${cleanSteamId}":`, err.message);
+    console.error(`[RCON Link] ❌ Failed for "${id}":`, err.message);
     return { success: false, error: err.message };
   }
 }
 
-/**
- * Notify the Rust server of a player's Discord Booster status
- * Grants: goatkitsui.booster and adds to group 'booster'
- */
 export async function setRustServerBooster(steamId, isBooster = true, steamName = "Survivor") {
   if (!steamId) {
-    console.error("[RCON Booster] Error: Missing SteamID parameter");
+    console.error("[RCON Booster] Error: Missing SteamID");
     return { success: false, error: "Missing SteamID" };
   }
 
-  const cleanSteamId = String(steamId).trim();
-  console.log(`[RCON Booster] 🚀 Processing booster status [${isBooster ? "GRANT" : "REVOKE"}] for SteamID: ${cleanSteamId} (${steamName})`);
+  const id = String(steamId).trim();
+  console.log(`[RCON Booster] 🚀 [${isBooster ? "GRANT" : "REVOKE"}] ${id} (${steamName})`);
 
   try {
     if (isBooster) {
-      // 1. Grant GoatKitsUI booster permission (checked by IsPlayerBooster())
-      const permGrant = await executeRconCommand(`o.grant user ${cleanSteamId} goatkitsui.booster`);
-      if (!permGrant.success || (permGrant.output && permGrant.output.toLowerCase().includes("unknown command"))) {
-        await executeRconCommand(`oxide.grant user ${cleanSteamId} goatkitsui.booster`);
+      const res = await executeRconCommand(`o.grant user ${id} goatkitsui.booster`);
+      if (!res.success || res.output?.toLowerCase().includes("unknown command")) {
+        await executeRconCommand(`oxide.grant user ${id} goatkitsui.booster`);
       }
-
-      // 2. Add player to Oxide 'booster' group
-      await executeRconCommand(`o.usergroup add ${cleanSteamId} booster`).catch(() => {});
-
-      // 3. Broadcast in Rust chat
+      await executeRconCommand(`o.usergroup add ${id} booster`).catch(() => {});
       await executeRconCommand(`say [GOAT 5X] 🚀 ${steamName} boosted our Discord server and unlocked Booster Perks & /kit booster!`).catch(() => {});
-
-      console.log(`[RCON Booster] ✅ Granted goatkitsui.booster + added to 'booster' group for [${cleanSteamId}] (${steamName})`);
+      console.log(`[RCON Booster] ✅ Granted booster for [${id}]`);
     } else {
-      // 1. Revoke GoatKitsUI booster permission
-      const permRevoke = await executeRconCommand(`o.revoke user ${cleanSteamId} goatkitsui.booster`);
-      if (!permRevoke.success || (permRevoke.output && permRevoke.output.toLowerCase().includes("unknown command"))) {
-        await executeRconCommand(`oxide.revoke user ${cleanSteamId} goatkitsui.booster`);
+      const res = await executeRconCommand(`o.revoke user ${id} goatkitsui.booster`);
+      if (!res.success || res.output?.toLowerCase().includes("unknown command")) {
+        await executeRconCommand(`oxide.revoke user ${id} goatkitsui.booster`);
       }
-
-      // 2. Remove player from Oxide 'booster' group
-      await executeRconCommand(`o.usergroup remove ${cleanSteamId} booster`).catch(() => {});
-
-      console.log(`[RCON Booster] 🔒 Revoked goatkitsui.booster + removed from 'booster' group for [${cleanSteamId}] (${steamName})`);
+      await executeRconCommand(`o.usergroup remove ${id} booster`).catch(() => {});
+      console.log(`[RCON Booster] 🔒 Revoked booster for [${id}]`);
     }
 
-    updateBoosterStatus(cleanSteamId, isBooster ? 1 : 0);
+    updateBoosterStatus(id, isBooster ? 1 : 0);
     return { success: true, output: isBooster ? "Booster perks granted" : "Booster perks revoked" };
   } catch (err) {
-    console.error(`[RCON Booster] ❌ Failed booster command for "${cleanSteamId}":`, err.message);
+    console.error(`[RCON Booster] ❌ Failed for "${id}":`, err.message);
     return { success: false, error: err.message };
   }
 }
 
-/**
- * Set or Revoke in-game VIP Rank & HQ Building Upgrade (30 Days)
- */
 export async function setRustServerVip(steamId, isVip = true, tier = "vip", steamName = "Survivor") {
   if (!steamId) return { success: false, error: "Missing SteamID" };
 
-  const cleanSteamId = String(steamId).trim();
-  const cleanTier = String(tier).toLowerCase().trim() || "vip";
-  console.log(`[RCON VIP] 👑 Processing VIP status [${isVip ? "GRANT" : "REVOKE"}] Tier: ${cleanTier} for SteamID: ${cleanSteamId} (${steamName})`);
+  const id  = String(steamId).trim();
+  const lvl = String(tier).toLowerCase().trim() || "vip";
+  console.log(`[RCON VIP] 👑 [${isVip ? "GRANT" : "REVOKE"}] Tier: ${lvl} for ${id} (${steamName})`);
 
   try {
     if (isVip) {
-      // 1. Add player to Oxide VIP group
-      await executeRconCommand(`o.usergroup add ${cleanSteamId} ${cleanTier}`);
-
-      // 2. Grant HQ Building Upgrade permission
-      await executeRconCommand(`o.grant user ${cleanSteamId} upgrade.hq`);
-      await executeRconCommand(`o.grant user ${cleanSteamId} buildinggrade.toptier`).catch(() => {});
-      await executeRconCommand(`o.grant user ${cleanSteamId} bgrade.4`).catch(() => {});
-
-      // 3. Grant Kit permission & UI role state
-      await executeRconCommand(`o.grant user ${cleanSteamId} goatkitsui.${cleanTier}`).catch(() => {});
-      await executeRconCommand(`goatui.setrole ${cleanSteamId} ${cleanTier} true`).catch(() => {});
-
-      // 4. In-Game Chat Announcement
-      await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} unlocked ${cleanTier.toUpperCase()} & HQ Building Upgrade (30 Days)!`).catch(() => {});
-
-      console.log(`[RCON VIP] ✅ Granted ${cleanTier} + upgrade.hq for [${cleanSteamId}] (${steamName})`);
+      await executeRconCommand(`o.usergroup add ${id} ${lvl}`);
+      await executeRconCommand(`o.grant user ${id} upgrade.hq`);
+      await executeRconCommand(`o.grant user ${id} buildinggrade.toptier`).catch(() => {});
+      await executeRconCommand(`o.grant user ${id} bgrade.4`).catch(() => {});
+      await executeRconCommand(`o.grant user ${id} goatkitsui.${lvl}`).catch(() => {});
+      await executeRconCommand(`goatui.setrole ${id} ${lvl} true`).catch(() => {});
+      await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} unlocked ${lvl.toUpperCase()} & HQ Building Upgrade (30 Days)!`).catch(() => {});
+      console.log(`[RCON VIP] ✅ Granted ${lvl} + upgrade.hq for [${id}]`);
     } else {
-      // 1. Remove player from Oxide VIP group
-      await executeRconCommand(`o.usergroup remove ${cleanSteamId} ${cleanTier}`);
-
-      // 2. Revoke HQ Building Upgrade permission
-      await executeRconCommand(`o.revoke user ${cleanSteamId} upgrade.hq`);
-      await executeRconCommand(`o.revoke user ${cleanSteamId} buildinggrade.toptier`).catch(() => {});
-      await executeRconCommand(`o.revoke user ${cleanSteamId} bgrade.4`).catch(() => {});
-
-      // 3. Revoke Kit permission & UI role state
-      await executeRconCommand(`o.revoke user ${cleanSteamId} goatkitsui.${cleanTier}`).catch(() => {});
-      await executeRconCommand(`goatui.setrole ${cleanSteamId} ${cleanTier} false`).catch(() => {});
-
-      console.log(`[RCON VIP] 🔒 Revoked ${cleanTier} + upgrade.hq for [${cleanSteamId}] (${steamName})`);
+      await executeRconCommand(`o.usergroup remove ${id} ${lvl}`);
+      await executeRconCommand(`o.revoke user ${id} upgrade.hq`);
+      await executeRconCommand(`o.revoke user ${id} buildinggrade.toptier`).catch(() => {});
+      await executeRconCommand(`o.revoke user ${id} bgrade.4`).catch(() => {});
+      await executeRconCommand(`o.revoke user ${id} goatkitsui.${lvl}`).catch(() => {});
+      await executeRconCommand(`goatui.setrole ${id} ${lvl} false`).catch(() => {});
+      console.log(`[RCON VIP] 🔒 Revoked ${lvl} + upgrade.hq for [${id}]`);
     }
 
-    return { success: true, isVip, tier: cleanTier };
+    return { success: true, isVip, tier: lvl };
   } catch (err) {
-    console.error(`[RCON VIP] ❌ Failed VIP RCON command for "${cleanSteamId}":`, err.message);
+    console.error(`[RCON VIP] ❌ Failed for "${id}":`, err.message);
     return { success: false, error: err.message };
   }
 }
 
-/**
- * Sync a single booster via RCON
- */
 export async function syncBoosterToRust(steamId, steamName = "Survivor") {
   return setRustServerBooster(steamId, true, steamName);
 }
 
-/**
- * Automatically grant the Discord Kit to a linked Steam user
- */
 export async function grantDiscordKit(steamId, steamName = "Survivor") {
   return notifyRustServerLink(steamId, steamName);
 }
 
-/**
- * Fetch online players directly via RCON
- */
 export async function fetchRconPlayers() {
   const res = await executeRconCommand("players");
   if (!res.success || !res.output) return [];
@@ -279,10 +309,7 @@ export async function fetchRconPlayers() {
     if (readingPlayers && line.trim()) {
       const match = line.match(/^(\d{17})\s+"([^"]+)"/);
       if (match) {
-        players.push({
-          SteamID: match[1],
-          DisplayName: match[2],
-        });
+        players.push({ SteamID: match[1], DisplayName: match[2] });
       }
     }
   }
