@@ -21,6 +21,8 @@ import {
   Radio,
   ShieldAlert,
   Flame,
+  Shield,
+  Star,
 } from "lucide-react";
 
 export interface KitItem {
@@ -49,6 +51,74 @@ export interface LiveKit {
 }
 
 const DISCORD_TICKET_URL = "https://discord.gg/EbZwSY7jXy";
+
+interface AtlasTheme {
+  name: string;
+  themeColor: string;
+  borderClass: string;
+  badgeClass: string;
+  bulletClass: string;
+  btnClass: string;
+  IconComponent: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+}
+
+const ATLAS_THEMES: AtlasTheme[] = [
+  {
+    name: "emerald",
+    themeColor: "#10b981",
+    borderClass: "border-emerald-500/30 hover:border-emerald-400/70",
+    badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    bulletClass: "bg-emerald-400",
+    btnClass: "bg-[#10b981] hover:bg-[#059669] text-black font-black shadow-[0_0_25px_rgba(16,185,129,0.35)]",
+    IconComponent: Zap,
+  },
+  {
+    name: "blue",
+    themeColor: "#3b82f6",
+    borderClass: "border-blue-500/30 hover:border-blue-400/70",
+    badgeClass: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    bulletClass: "bg-blue-400",
+    btnClass: "bg-[#6366f1] hover:bg-[#4f46e5] text-white font-black shadow-[0_0_25px_rgba(99,102,241,0.35)]",
+    IconComponent: Star,
+  },
+  {
+    name: "purple",
+    themeColor: "#a855f7",
+    borderClass: "border-purple-500/30 hover:border-purple-400/70",
+    badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    bulletClass: "bg-purple-400",
+    btnClass: "bg-[#9333ea] hover:bg-[#7e22ce] text-white font-black shadow-[0_0_25px_rgba(147,51,234,0.35)]",
+    IconComponent: Sparkles,
+  },
+  {
+    name: "red",
+    themeColor: "#ef4444",
+    borderClass: "border-red-500/30 hover:border-red-400/70",
+    badgeClass: "bg-red-500/15 text-red-400 border-red-500/30",
+    bulletClass: "bg-red-400",
+    btnClass: "bg-[#e62020] hover:bg-[#ff2b2b] text-white font-black shadow-[0_0_25px_rgba(230,32,32,0.4)]",
+    IconComponent: Flame,
+  },
+  {
+    name: "gold",
+    themeColor: "#eab308",
+    borderClass: "border-yellow-500/30 hover:border-yellow-400/70",
+    badgeClass: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+    bulletClass: "bg-yellow-400",
+    btnClass: "bg-[#eab308] hover:bg-[#ca8a04] text-black font-black shadow-[0_0_25px_rgba(234,179,8,0.4)]",
+    IconComponent: Crown,
+  },
+];
+
+function getAtlasTheme(kit: LiveKit, index: number): AtlasTheme {
+  const t = (kit.Title || "").toUpperCase();
+  const lock = (kit.LockType || "").toUpperCase();
+  if (t.includes("CHAMPION") || lock === "GOD" || t.includes("GOD")) return ATLAS_THEMES[4];
+  if (t.includes("VANGUARD") || lock === "GUNS" || t.includes("GUN")) return ATLAS_THEMES[3];
+  if (t.includes("MYTHIC") || lock === "MVP" || t.includes("MVP")) return ATLAS_THEMES[2];
+  if (t.includes("PRIME") || lock === "BUILDER" || t.includes("BUILD")) return ATLAS_THEMES[1];
+  return ATLAS_THEMES[index % ATLAS_THEMES.length];
+}
 
 /**
  * Returns a working image URL for a Rust item using rustedit.io CDN.
@@ -362,6 +432,24 @@ export const StoreSection: React.FC = () => {
           </div>
         </div>
 
+        {/* Atlas-Style Trust Guarantee Bar */}
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-12 py-3.5 px-6 rounded-2xl bg-[#090d15] border border-white/10 mb-8 text-xs font-mono text-zinc-300 shadow-xl">
+          <div className="flex items-center gap-2 font-bold text-emerald-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Instant In-Game Delivery</span>
+          </div>
+          <span className="hidden sm:inline text-zinc-700">|</span>
+          <div className="flex items-center gap-2 font-bold text-blue-400">
+            <span className="w-2 h-2 rounded-full bg-blue-400" />
+            <span>Secure Payment (PayPal, Card, Crypto)</span>
+          </div>
+          <span className="hidden sm:inline text-zinc-700">|</span>
+          <div className="flex items-center gap-2 font-bold text-purple-400">
+            <span className="w-2 h-2 rounded-full bg-purple-400" />
+            <span>24/7 Server Discord Support</span>
+          </div>
+        </div>
+
         {/* Kits Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {loading ? (
@@ -386,133 +474,196 @@ export const StoreSection: React.FC = () => {
               </button>
             </div>
           ) : (
-            filteredKits.map((kit) => {
+            filteredKits.map((kit, kitIdx) => {
+              const theme = getAtlasTheme(kit, kitIdx);
+              const ThemeIcon = theme.IconComponent;
               const unlocked = isKitUnlocked(kit);
               const lock = (kit.LockType || "NONE").toUpperCase();
               const isFree = kit.Currency?.toUpperCase() === "FREE" || kit.Price === 0;
               const items = kit.Items || [];
 
-              // Up to 12 slots for card preview (6 slots x 2 rows)
-              const previewSlotsCount = 12;
-              const previewSlots: (KitItem | undefined)[] = [];
-              for (let i = 0; i < previewSlotsCount; i++) {
-                previewSlots.push(items[i]);
-              }
-
               return (
                 <div
                   key={kit.Id}
-                  className="relative flex flex-col bg-[#0b0e15] border border-white/10 hover:border-white/25 rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.6)] group overflow-hidden"
+                  className={`relative flex flex-col bg-[#0b0f19] border ${theme.borderClass} rounded-2xl sm:rounded-3xl p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1.5 shadow-[0_15px_35px_rgba(0,0,0,0.7)] group overflow-hidden`}
                 >
-                  {/* Top Accent Line */}
+                  {/* Faint ambient glow matching card theme */}
                   <div
-                    className="absolute top-0 left-0 right-0 h-1.5"
-                    style={{ backgroundColor: kit.ColorHex || "#e62020" }}
+                    className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none transition-opacity duration-500 opacity-15 group-hover:opacity-30"
+                    style={{ backgroundColor: theme.themeColor }}
                   />
 
-                  {/* Header: Category Badge & Tier */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                        {kit.TabName || "GENERAL"}
-                      </span>
+                  {/* 3D Crest Background Watermark (Atlas Visual Depth) */}
+                  <div className="absolute -right-6 -bottom-6 w-56 h-56 pointer-events-none opacity-[0.06] group-hover:opacity-[0.14] transition-opacity duration-500">
+                    <svg
+                      viewBox="0 0 200 200"
+                      fill="currentColor"
+                      className="w-full h-full"
+                      style={{ color: theme.themeColor }}
+                    >
+                      <path
+                        d="M100 15 L180 50 L180 120 C180 165 140 190 100 200 C60 190 20 165 20 120 L20 50 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="5"
+                      />
+                      <path
+                        d="M100 38 L160 64 L160 115 C160 150 130 170 100 180 C70 170 40 150 40 115 L40 64 Z"
+                        fill="currentColor"
+                        fillOpacity="0.25"
+                      />
+                      <circle cx="100" cy="100" r="32" stroke="currentColor" strokeWidth="3" fill="none" />
+                      <polygon
+                        points="100,80 106,94 120,94 109,103 113,117 100,108 87,117 91,103 80,94 94,94"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </div>
 
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider border border-white/10"
+                  {/* Top Header: Icon + Title + Category Pill */}
+                  <div className="relative z-10 flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-transform duration-300 group-hover:scale-110"
                         style={{
-                          backgroundColor: `${kit.ColorHex || "#e62020"}22`,
-                          color: kit.ColorHex || "#fff",
+                          backgroundColor: `${theme.themeColor}18`,
+                          borderColor: `${theme.themeColor}40`,
                         }}
                       >
-                        {getTierIcon(lock)}
-                        {lock === "NONE" ? "STANDARD" : lock}
-                      </span>
+                        <ThemeIcon className="w-5 h-5" style={{ color: theme.themeColor }} />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-black text-2xl text-white uppercase tracking-tight group-hover:text-white transition-colors">
+                          {kit.Title}
+                        </h3>
+                        <p className="text-zinc-400 text-xs font-sans mt-0.5">
+                          Enhanced equipment with in-game perks
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Cooldown or ready badge */}
-                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-zinc-400">
-                      <Clock className="w-3 h-3 text-zinc-500" />
-                      {kit.CooldownHours ? `${kit.CooldownHours}h CD` : "Ready"}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border shrink-0 ${theme.badgeClass}`}>
+                      {kit.TabName || "VIP"}
                     </span>
                   </div>
 
-                  {/* Title & Price */}
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <h3 className="font-display font-black text-xl text-white uppercase tracking-tight group-hover:text-red-400 transition-colors">
-                      {kit.Title}
-                    </h3>
-                    <span className="shrink-0 px-2.5 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-black text-xs">
+                  {/* Perks Bullet List (Atlas Style) */}
+                  <div className="relative z-10 space-y-2.5 my-5 py-4 border-y border-white/5 flex-grow">
+                    <div className="flex items-center gap-2.5 text-xs text-zinc-300">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.bulletClass}`} />
+                      <span>Instant In-Game RCON Delivery</span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 text-xs text-zinc-300">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.bulletClass}`} />
+                      <span>
+                        {kit.CooldownHours ? `${kit.CooldownHours}h Cooldown` : "No Cooldown / Ready Instantly"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 text-xs text-zinc-300">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.bulletClass}`} />
+                      <span>
+                        {(kit.WipeLockHours || 0) > 0
+                          ? `Wipe Locked: First ${kit.WipeLockHours}h of wipe`
+                          : "Available immediately from wipe"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 text-xs text-zinc-300">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.bulletClass}`} />
+                      <span>
+                        {(kit.MaxUsesPerWipe || 0) > 0
+                          ? `Limited to ${kit.MaxUsesPerWipe}x per wipe cycle`
+                          : "Unlimited usage throughout wipe"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 text-xs text-zinc-300">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.bulletClass}`} />
+                      <span className="font-semibold text-white">
+                        {items.length} In-Game Item{items.length !== 1 ? "s" : ""} Loaded
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* In-Game Inventory Mini-Preview (Chips) */}
+                  {items.length > 0 && (
+                    <div className="relative z-10 mb-5">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-2">
+                        <span className="uppercase">Loaded Items ({items.length})</span>
+                        <button
+                          type="button"
+                          onClick={() => setInspectKit(kit)}
+                          className="text-xs text-zinc-300 hover:text-white flex items-center gap-1 transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-red-400" />
+                          <span>View 30 slots</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+                        {items.slice(0, 6).map((it, iIdx) => (
+                          <div
+                            key={iIdx}
+                            title={`${it.DisplayName || it.Shortname} x${it.Amount}`}
+                            className="relative w-11 h-11 rounded-lg bg-black/40 border border-white/10 p-1 flex items-center justify-center shrink-0 group/item hover:border-white/30 transition-all"
+                          >
+                            <img
+                              src={getRustItemImageUrl(it.Shortname)}
+                              alt={it.Shortname}
+                              className="w-8 h-8 object-contain"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = `https://rustlabs.com/img/items180/${it.Shortname.toLowerCase().trim()}.png`;
+                              }}
+                            />
+                            <span className="absolute bottom-0.5 right-1 text-[9px] font-mono font-bold text-amber-400 bg-black/75 px-1 rounded">
+                              x{it.Amount}
+                            </span>
+                          </div>
+                        ))}
+                        {items.length > 6 && (
+                          <button
+                            onClick={() => setInspectKit(kit)}
+                            className="w-11 h-11 rounded-lg bg-white/5 border border-dashed border-white/20 flex items-center justify-center shrink-0 text-zinc-400 hover:text-white hover:bg-white/10 text-xs font-mono font-bold transition-colors"
+                          >
+                            +{items.length - 6}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Server Badge (Atlas: "Available on: [5X]") */}
+                  <div className="relative z-10 flex items-center gap-2 text-xs font-mono text-zinc-400 mb-3">
+                    <span>Available on:</span>
+                    <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10 text-[11px] font-bold text-white">
+                      5X
+                    </span>
+                  </div>
+
+                  {/* Price (Atlas Bold Style) */}
+                  <div className="relative z-10 mb-4">
+                    <div className="text-3xl sm:text-4xl font-black text-white font-display tracking-tight">
                       {kit.PriceText || (isFree ? "FREE" : `$${kit.Price}`)}
-                    </span>
+                    </div>
                   </div>
 
-                  {/* Limitations badges (WipeLock & MaxUses) */}
-                  {(kit.WipeLockHours || 0) > 0 || (kit.MaxUsesPerWipe || 0) > 0 ? (
-                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                      {(kit.WipeLockHours || 0) > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-mono flex items-center gap-1">
-                          <Lock className="w-2.5 h-2.5" /> Wipe Lock: {kit.WipeLockHours}h
-                        </span>
-                      )}
-                      {(kit.MaxUsesPerWipe || 0) > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 text-[10px] font-mono flex items-center gap-1">
-                          <Crosshair className="w-2.5 h-2.5" /> Max: {kit.MaxUsesPerWipe}x / Wipe
-                        </span>
-                      )}
-                    </div>
-                  ) : null}
-
-                  {/* ── Real Rust Inventory Grid Slots (6 columns x 2 rows) ── */}
-                  <div className="bg-[#07090e] rounded-xl p-3 border border-white/5 mb-4 flex-grow">
-                    <div className="font-mono text-[10px] uppercase tracking-wider text-zinc-400 font-bold mb-2.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-zinc-400" /> INVENTORY CONTENTS
-                      </span>
-                      <span className="text-zinc-500 font-mono">{items.length} items</span>
-                    </div>
-
-                    {/* 6 Columns Grid (Identical to in-game Rust slots) */}
-                    <div className="grid grid-cols-6 gap-1.5 justify-items-center">
-                      {previewSlots.map((slotItem, sIdx) => (
-                        <RustItemSlot key={sIdx} item={slotItem} compact />
-                      ))}
-                    </div>
-
-                    {/* Show "+X more" if kit has more items */}
-                    {items.length > 12 && (
-                      <button
-                        onClick={() => setInspectKit(kit)}
-                        className="w-full mt-2 py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-[10px] font-mono text-zinc-400 hover:text-white flex items-center justify-center gap-1 transition-colors"
-                      >
-                        <Eye className="w-3 h-3 text-red-400" />
-                        <span>+{items.length - 12} more items — View full kit</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Bottom Action Buttons */}
-                  <div className="space-y-2 mt-auto">
-                    <button
-                      onClick={() => setInspectKit(kit)}
-                      className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 border border-white/5 transition-all"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>Inspect Kit Contents (30 slots)</span>
-                    </button>
-
+                  {/* CTA Buttons (Atlas Style) */}
+                  <div className="relative z-10 space-y-2 mt-auto">
                     {unlocked ? (
                       <button
                         onClick={() => {
                           showToast(`Type /kit in-game to redeem your ${kit.Title} kit!`, "success");
                         }}
-                        className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-all"
+                        className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all"
                       >
                         <Check className="w-4 h-4" /> UNLOCKED — TYPE /KIT IN-GAME
                       </button>
                     ) : isFree && lock === "LINKED" ? (
                       <button
                         onClick={openProfile}
-                        className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(0,168,255,0.3)]"
+                        className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(0,168,255,0.4)]"
                       >
                         <ExternalLink className="w-4 h-4" /> LINK DISCORD TO UNLOCK
                       </button>
@@ -521,18 +672,26 @@ export const StoreSection: React.FC = () => {
                         href={DISCORD_TICKET_URL}
                         target="_blank"
                         rel="noreferrer"
-                        className="w-full py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(142,68,173,0.3)]"
+                        className="w-full py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(142,68,173,0.4)]"
                       >
                         <Zap className="w-4 h-4" /> BOOST DISCORD TO UNLOCK
                       </a>
                     ) : (
                       <button
                         onClick={() => setBuyModalKit(kit)}
-                        className="w-full py-2.5 rounded-lg bg-[#e62020] hover:bg-[#ff2b2b] text-white font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(230,32,32,0.4)]"
+                        className={`w-full py-3.5 rounded-xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${theme.btnClass}`}
                       >
                         <MessageSquare className="w-4 h-4" /> BUY — {kit.PriceText || `$${kit.Price}`}
                       </button>
                     )}
+
+                    <button
+                      onClick={() => setInspectKit(kit)}
+                      className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Inspect Kit Contents (30 slots)</span>
+                    </button>
                   </div>
                 </div>
               );
