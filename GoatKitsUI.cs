@@ -1463,10 +1463,10 @@ namespace Oxide.Plugins
             }
         }
 
-        void OnItemCraftFinished(ItemCraftTask task, Item item)
+        void OnItemCraftFinished(ItemCraftTask task, Item item, ItemCrafter itemCrafter)
         {
-            if (task == null || item == null || item.info == null) return;
-            BasePlayer player = task.owner;
+            if (item == null || item.info == null) return;
+            BasePlayer player = itemCrafter?.owner ?? item.GetOwnerPlayer();
             if (player == null) return;
 
             var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
