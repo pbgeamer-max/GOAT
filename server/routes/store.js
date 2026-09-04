@@ -47,7 +47,7 @@ function loadTabs() {
     inMemoryTabs = tabs;
     return tabs;
   }
-  return ["VIP", "ALL KITS", "RESOURCES", "WEAPONS", "GEMS"];
+  return ["VIP"];
 }
 
 const router = express.Router();

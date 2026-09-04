@@ -14,7 +14,7 @@ namespace Oxide.Plugins
         // -----------------------------------------------------------
         // CONFIGURATION
         // -----------------------------------------------------------
-        private string ApiEndpoint = "https://goat-production-d72e.up.railway.app/api/sync-stats";
+        private string ApiEndpoint = "https://rustgoat.com/api/sync-stats";
         private string ApiSecret = "goat-stats-sync-secret";
         private int BatchSyncIntervalSeconds = 30;
 

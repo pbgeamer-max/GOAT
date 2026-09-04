@@ -142,7 +142,7 @@ export const StoreSection: React.FC = () => {
   const [tabs, setTabs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("ALL KITS");
+  const [activeTab, setActiveTab] = useState<string>("VIP");
   const [inspectKit, setInspectKit] = useState<LiveKit | null>(null);
   const [buyModalKit, setBuyModalKit] = useState<LiveKit | null>(null);
   const [copiedSteamId, setCopiedSteamId] = useState(false);
@@ -162,22 +162,28 @@ export const StoreSection: React.FC = () => {
         const liveKits: LiveKit[] = data.kits;
         setKits(liveKits);
 
-        // Gather categories: prioritize server tabs list, and include any tabs found on kits
-        const serverTabs: string[] = Array.isArray(data.tabs) && data.tabs.length > 0 ? data.tabs : [];
+        // Gather categories from server / live kits, keeping only VIP (and any real kit tabs created)
+        const serverTabs: string[] = Array.isArray(data.tabs) && data.tabs.length > 0 ? data.tabs : ["VIP"];
         const kitTabs: string[] = liveKits.map((k) => k.TabName).filter(Boolean);
         const uniqueTabs = Array.from(new Set([...serverTabs, ...kitTabs]));
 
-        // Ensure "ALL KITS" is the first tab
-        const hasAll = uniqueTabs.some((t) => t.toUpperCase() === "ALL KITS" || t.toUpperCase() === "ALL");
-        const cleanTabs = uniqueTabs.filter((t) => t.toUpperCase() !== "ALL KITS" && t.toUpperCase() !== "ALL");
-        const finalTabs = ["ALL KITS", ...cleanTabs];
+        // Remove dummy categories: ALL KITS, RESOURCES, WEAPONS, GEMS
+        const cleanTabs = uniqueTabs.filter(
+          (t) =>
+            t.toUpperCase() !== "ALL KITS" &&
+            t.toUpperCase() !== "ALL" &&
+            t.toUpperCase() !== "RESOURCES" &&
+            t.toUpperCase() !== "WEAPONS" &&
+            t.toUpperCase() !== "GEMS"
+        );
+        const finalTabs = cleanTabs.length > 0 ? cleanTabs : ["VIP"];
 
         setTabs(finalTabs);
         setLastSyncTime(new Date());
 
         setActiveTab((curr) => {
           if (!curr || !finalTabs.some((t) => t.toUpperCase() === curr.toUpperCase())) {
-            return "ALL KITS";
+            return finalTabs[0] || "VIP";
           }
           return curr;
         });
@@ -731,35 +737,7 @@ export const StoreSection: React.FC = () => {
                 )}
               </div>
 
-              {/* Step-by-Step Instructions */}
-              <div className="space-y-3 mb-6">
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
-                    1
-                  </span>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Click <strong className="text-white">"OPEN DISCORD TICKET"</strong> to join our Discord server and open a ticket in <strong className="text-yellow-400">#store-tickets</strong>.
-                  </p>
-                </div>
 
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
-                    2
-                  </span>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Send your <strong className="text-white">SteamID64</strong> and choose your payment method (PayPal, card, or crypto).
-                  </p>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
-                    3
-                  </span>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Once payment is confirmed, an admin grants your Discord role and your kit is activated on the server instantly via RCON!
-                  </p>
-                </div>
-              </div>
 
               {/* Direct Link Action */}
               <a

@@ -229,7 +229,7 @@ namespace Oxide.Plugins
             public int RpPerNode = 3;
             public string WebsiteLinkUrl = "https://yourwebsite.com/link";
             public string DiscordInviteUrl = "https://discord.gg/7uRsxfknSG";
-            public string ApiEndpoint = "https://goat-production-d72e.up.railway.app/api/sync-kits";
+            public string ApiEndpoint = "https://rustgoat.com/api/sync-kits";
             public string ApiSecret = "goat-stats-sync-secret";
             public string LinkedPermission = "discordauth.linked";
             public string BoosterPermission = "discordbooster.boosted";
@@ -246,7 +246,7 @@ namespace Oxide.Plugins
                 RpPerNode = 3,
                 WebsiteLinkUrl = "https://yourwebsite.com/link",
                 DiscordInviteUrl = "https://discord.gg/7uRsxfknSG",
-                ApiEndpoint = "https://goat-production-d72e.up.railway.app/api/sync-kits",
+                ApiEndpoint = "https://rustgoat.com/api/sync-kits",
                 ApiSecret = "goat-stats-sync-secret",
                 LinkedPermission = "discordauth.linked",
                 BoosterPermission = "discordbooster.boosted"

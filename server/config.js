@@ -28,7 +28,7 @@ const int = (val, fallback = null) => {
 };
 
 // Clean Base URL (remove trailing slashes and hidden line breaks)
-const rawBaseUrl = cleanUrl(process.env.BASE_URL, `https://goat-production-d72e.up.railway.app`);
+const rawBaseUrl = cleanUrl(process.env.BASE_URL, `https://rustgoat.com`);
 const baseUrl = rawBaseUrl.replace(/\/+$/, "");
 
 // Steam OpenID Realm MUST be clean and end with /
