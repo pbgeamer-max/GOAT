@@ -599,60 +599,30 @@ export const LeaderboardSection: React.FC = () => {
                         {formatTime(player.playtime_seconds)}
                       </td>
 
-                      {/* FARMING (NODES) with detailed breakdown */}
+                      {/* FARMING (NODES) */}
                       <td className="py-3.5 px-4 text-center">
-                        <div className="inline-flex flex-col items-center">
-                          <span
-                            className={`font-bold ${
-                              sortBy === "total_farmed" || sortBy === "sulfur_gathered"
-                                ? "text-yellow-400 font-black text-sm"
-                                : "text-zinc-200"
-                            }`}
-                          >
-                            {formatCompact(totalFarm)}
-                          </span>
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono mt-0.5">
-                             <span title="Sulfur nodes" className="text-yellow-500/80">
-                               S:{formatCompact(sulfur)}
-                             </span>
-                             <span>·</span>
-                             <span title="Metal nodes" className="text-zinc-400">
-                               M:{formatCompact(metal)}
-                             </span>
-                             <span>·</span>
-                             <span title="Stone nodes" className="text-zinc-500">
-                               St:{formatCompact(stone)}
-                             </span>
-                           </div>
-                        </div>
+                        <span
+                          className={`font-bold ${
+                            sortBy === "total_farmed" || sortBy === "sulfur_gathered"
+                              ? "text-yellow-400 font-black text-sm"
+                              : "text-zinc-200"
+                          }`}
+                        >
+                          {formatCompact(totalFarm)}
+                        </span>
                       </td>
 
-                      {/* BOOM (RAIDS: Satchels, C4, Rockets) */}
+                      {/* BOOM (RAIDS) */}
                       <td className="py-3.5 px-4 text-center">
-                        <div className="inline-flex flex-col items-center">
-                          <span
-                            className={`font-bold ${
-                              sortBy === "explosives_used" || sortBy === "rockets_fired"
-                                ? "text-red-400 font-black text-sm"
-                                : "text-zinc-200"
-                            }`}
-                          >
-                            {formatNumber(totalBoom)}
-                          </span>
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono mt-0.5">
-                             <span title="Rockets Fired" className="text-red-400/90">
-                               R:{rockets}
-                             </span>
-                             <span>·</span>
-                             <span title="C4 Used" className="text-amber-400/90">
-                               C4:{c4}
-                             </span>
-                             <span>·</span>
-                             <span title="Satchels Used" className="text-orange-400/90">
-                               SA:{satchels}
-                             </span>
-                           </div>
-                        </div>
+                        <span
+                          className={`font-bold ${
+                            sortBy === "explosives_used" || sortBy === "rockets_fired"
+                              ? "text-red-400 font-black text-sm"
+                              : "text-zinc-200"
+                          }`}
+                        >
+                          {formatNumber(totalBoom)}
+                        </span>
                       </td>
                     </tr>
                   );
