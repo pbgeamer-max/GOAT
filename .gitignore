@@ -7,6 +7,7 @@ dist
 data/*
 !data/kits.json
 !data/tabs.json
+!data/gems_packages.json
 *.code-workspace
 serviceAccountKey.json
 server/database/serviceAccountKey.json

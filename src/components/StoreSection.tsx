@@ -25,6 +25,8 @@ import {
   Star,
 } from "lucide-react";
 
+import { GemsStoreSection } from "@/components/GemsStoreSection";
+
 export interface KitItem {
   Shortname: string;
   DisplayName?: string;
@@ -213,6 +215,7 @@ export const StoreSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("VIP");
+  const [storeMode, setStoreMode] = useState<"gems" | "kits">("gems");
   const [inspectKit, setInspectKit] = useState<LiveKit | null>(null);
   const [buyModalKit, setBuyModalKit] = useState<LiveKit | null>(null);
   const [copiedSteamId, setCopiedSteamId] = useState(false);
@@ -383,23 +386,67 @@ export const StoreSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 font-mono text-xs uppercase tracking-widest mb-3">
-              <Gift className="w-3.5 h-3.5" /> GOAT 5X VIP RANKS & KITS
-            </div>
-            <h2 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white uppercase tracking-tight">
-              SERVER KITS & <span className="text-[#e62020]">STORE</span>
-            </h2>
-            <p className="text-zinc-400 text-sm mt-2 max-w-2xl">
-              Browse all VIP ranks and kits available on the server. Click any kit to inspect its full inventory contents.
-            </p>
-          </div>
+        {/* Top Store Mode Switcher: 💎 BUY GEMS vs 👑 VIP RANKS & KITS */}
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-10">
+          <button
+            onClick={() => setStoreMode("gems")}
+            className={`px-6 sm:px-8 py-3.5 rounded-2xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-3 transition-all duration-300 cursor-pointer ${
+              storeMode === "gems"
+                ? "bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-black shadow-[0_0_35px_rgba(234,179,8,0.6)] scale-105 border-2 border-yellow-200"
+                : "bg-[#0c1017] text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5 hover:border-yellow-500/30"
+            }`}
+          >
+            <Sparkles className={`w-4 h-4 ${storeMode === "gems" ? "text-black animate-pulse" : "text-yellow-400"}`} />
+            <span>💎 BUY GEMS (ATLAS STORE)</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-black text-yellow-300 border border-yellow-400/40 uppercase">
+              HOT 🔥
+            </span>
+          </button>
 
-          {/* Dynamic Categories (Tabs) directly from Rust Server */}
-          <div className="flex flex-wrap items-center gap-2 bg-[#0d1017] p-1.5 rounded-xl border border-white/10 max-w-full overflow-x-auto">
-            {tabs.map((tab) => {
+          <button
+            onClick={() => setStoreMode("kits")}
+            className={`px-6 sm:px-8 py-3.5 rounded-2xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-3 transition-all duration-300 cursor-pointer ${
+              storeMode === "kits"
+                ? "bg-gradient-to-r from-red-600 via-rose-500 to-red-600 text-white shadow-[0_0_35px_rgba(230,32,32,0.6)] scale-105 border-2 border-red-300"
+                : "bg-[#0c1017] text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5 hover:border-red-500/30"
+            }`}
+          >
+            <Crown className="w-4 h-4 text-yellow-400" />
+            <span>👑 VIP RANKS & KITS</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white/10 text-zinc-300">
+              {kits.length}
+            </span>
+          </button>
+        </div>
+
+        {storeMode === "gems" ? (
+          <GemsStoreSection />
+        ) : (
+          <>
+            {/* Section Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 font-mono text-xs uppercase tracking-widest mb-3">
+                  <Gift className="w-3.5 h-3.5" /> GOAT 5X VIP RANKS & KITS
+                </div>
+                <h2 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white uppercase tracking-tight">
+                  SERVER KITS & <span className="text-[#e62020]">STORE</span>
+                </h2>
+                <p className="text-zinc-400 text-sm mt-2 max-w-2xl">
+                  Browse all VIP ranks and kits available on the server. Click any kit to inspect its full inventory contents.
+                </p>
+              </div>
+
+              {/* Dynamic Categories (Tabs) directly from Rust Server */}
+              <div className="flex flex-wrap items-center gap-2 bg-[#0d1017] p-1.5 rounded-xl border border-white/10 max-w-full overflow-x-auto">
+                <button
+                  onClick={() => setStoreMode("gems")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-display font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
+                >
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  <span>💎 BUY GEMS</span>
+                </button>
+                {tabs.map((tab) => {
               const count =
                 tab === "ALL KITS"
                   ? kits.length
@@ -698,6 +745,8 @@ export const StoreSection: React.FC = () => {
             })
           )}
         </div>
+        </>
+      )}
       </div>
 
       {/* ── FULL RUST INVENTORY INSPECTION MODAL (EXACT 6x5 GRID FROM SCREENSHOT) ── */}

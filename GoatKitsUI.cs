@@ -1847,6 +1847,127 @@ namespace Oxide.Plugins
             else SendReply(player, "<color=#E74C3C>[SKINBOX]</color> Failed to import skins from Cache.json.");
         }
 
+        [ChatCommand("addgems")]
+        private void CmdChatAddGems(BasePlayer player, string cmd, string[] args)
+        {
+            if (player != null && !HasRank(player))
+            {
+                SendReply(player, "<color=#E74C3C>[ERROR]</color> You do not have permission to use this command.");
+                return;
+            }
+
+            if (args.Length < 2)
+            {
+                SendReply(player, "<color=#F5A623>[USAGE]</color> /addgems <SteamID64 or PlayerName> <amount>");
+                return;
+            }
+
+            string query = args[0].Trim();
+            int amount = ParseIntSafe(args[1], 0);
+            if (amount == 0)
+            {
+                SendReply(player, "<color=#E74C3C>[ERROR]</color> Please provide a valid non-zero amount.");
+                return;
+            }
+
+            string targetUserId = null;
+            string targetName = query;
+            BasePlayer targetPlayer = null;
+
+            if (ulong.TryParse(query, out ulong steamId) && steamId > 76561197960265728L)
+            {
+                targetUserId = steamId.ToString();
+                targetPlayer = BasePlayer.Find(targetUserId);
+                if (targetPlayer != null) targetName = targetPlayer.displayName;
+            }
+            else
+            {
+                targetPlayer = BasePlayer.activePlayerList.FirstOrDefault(p => p.displayName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (targetPlayer != null)
+                {
+                    targetUserId = targetPlayer.UserIDString;
+                    targetName = targetPlayer.displayName;
+                }
+            }
+
+            if (string.IsNullOrEmpty(targetUserId))
+            {
+                SendReply(player, $"<color=#E74C3C>[ERROR]</color> Player or SteamID '{query}' not found.");
+                return;
+            }
+
+            var acc = GetOrCreateAccount(targetUserId, targetName);
+            acc.Gems += amount;
+            if (acc.Gems < 0) acc.Gems = 0;
+            SavePlayerData();
+
+            SendReply(player, $"<color=#2ECC71>[GEMS]</color> Added <color=#F1C40F>+{amount:N0} GEMS</color> to <color=#00A8FF>{targetName}</color> ({targetUserId}). New balance: <color=#F1C40F>{acc.Gems:N0} GEMS</color>.");
+
+            if (targetPlayer != null && targetPlayer.IsConnected)
+            {
+                SendReply(targetPlayer, $"<color=#F1C40F>💎 [STORE PAYMENT RECEIVED]</color> You received <color=#2ECC71>+{amount:N0} GEMS</color>! Balance: <color=#F1C40F>{acc.Gems:N0} GEMS</color>.");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", targetPlayer.transform.position);
+            }
+        }
+
+        [ChatCommand("setgems")]
+        private void CmdChatSetGems(BasePlayer player, string cmd, string[] args)
+        {
+            if (player != null && !HasRank(player))
+            {
+                SendReply(player, "<color=#E74C3C>[ERROR]</color> You do not have permission to use this command.");
+                return;
+            }
+
+            if (args.Length < 2)
+            {
+                SendReply(player, "<color=#F5A623>[USAGE]</color> /setgems <SteamID64 or PlayerName> <amount>");
+                return;
+            }
+
+            string query = args[0].Trim();
+            int amount = ParseIntSafe(args[1], 0);
+            if (amount < 0) amount = 0;
+
+            string targetUserId = null;
+            string targetName = query;
+            BasePlayer targetPlayer = null;
+
+            if (ulong.TryParse(query, out ulong steamId) && steamId > 76561197960265728L)
+            {
+                targetUserId = steamId.ToString();
+                targetPlayer = BasePlayer.Find(targetUserId);
+                if (targetPlayer != null) targetName = targetPlayer.displayName;
+            }
+            else
+            {
+                targetPlayer = BasePlayer.activePlayerList.FirstOrDefault(p => p.displayName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (targetPlayer != null)
+                {
+                    targetUserId = targetPlayer.UserIDString;
+                    targetName = targetPlayer.displayName;
+                }
+            }
+
+            if (string.IsNullOrEmpty(targetUserId))
+            {
+                SendReply(player, $"<color=#E74C3C>[ERROR]</color> Player or SteamID '{query}' not found.");
+                return;
+            }
+
+            var acc = GetOrCreateAccount(targetUserId, targetName);
+            acc.Gems = amount;
+            SavePlayerData();
+
+            SendReply(player, $"<color=#2ECC71>[GEMS]</color> Set GEMS for <color=#00A8FF>{targetName}</color> ({targetUserId}) to <color=#F1C40F>{acc.Gems:N0} GEMS</color>.");
+
+            if (targetPlayer != null && targetPlayer.IsConnected)
+            {
+                SendReply(targetPlayer, $"<color=#F1C40F>💎 [BALANCE UPDATE]</color> Your GEMS balance was set to: <color=#F1C40F>{acc.Gems:N0} GEMS</color>.");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", targetPlayer.transform.position);
+            }
+        }
+
         [ChatCommand("reskin")]
         private void CmdChatReskin(BasePlayer player, string cmd, string[] args)
         {
@@ -4648,6 +4769,61 @@ namespace Oxide.Plugins
             SyncKitsToWeb();
             if (arg.Player() != null)
                 SendReply(arg.Player(), $"<color=#2ECC71>[GoatKitsUI]</color> Dispatched {kitsData?.Kits?.Count ?? 0} kits to website store!");
+        }
+
+        [ConsoleCommand("goatui.addgems")]
+        private void CmdConsoleAddGems(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null && !HasRank(arg.Player())) return;
+            string targetId = arg.GetString(0, "").Trim();
+            int amount = arg.GetInt(1, 0);
+            if (string.IsNullOrEmpty(targetId) || amount == 0)
+            {
+                arg.ReplyWith("[USAGE] goatui.addgems <SteamID64> <amount>");
+                return;
+            }
+
+            var acc = GetOrCreateAccount(targetId, null);
+            acc.Gems += amount;
+            if (acc.Gems < 0) acc.Gems = 0;
+            SavePlayerData();
+
+            string msg = $"[GoatKitsUI] Successfully added {amount} GEMS to {targetId}. New Balance: {acc.Gems} GEMS.";
+            arg.ReplyWith(msg);
+
+            var targetPlayer = BasePlayer.Find(targetId);
+            if (targetPlayer != null && targetPlayer.IsConnected)
+            {
+                SendReply(targetPlayer, $"<color=#F1C40F>💎 [STORE PAYMENT RECEIVED]</color> You have been credited <color=#2ECC71>+{amount:N0} GEMS</color>! New balance: <color=#F1C40F>{acc.Gems:N0} GEMS</color>.");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", targetPlayer.transform.position);
+            }
+        }
+
+        [ConsoleCommand("goatui.setgems")]
+        private void CmdConsoleSetGems(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null && !HasRank(arg.Player())) return;
+            string targetId = arg.GetString(0, "").Trim();
+            int amount = arg.GetInt(1, 0);
+            if (string.IsNullOrEmpty(targetId))
+            {
+                arg.ReplyWith("[USAGE] goatui.setgems <SteamID64> <amount>");
+                return;
+            }
+
+            var acc = GetOrCreateAccount(targetId, null);
+            acc.Gems = Math.Max(0, amount);
+            SavePlayerData();
+
+            string msg = $"[GoatKitsUI] Successfully set GEMS of {targetId} to {acc.Gems}.";
+            arg.ReplyWith(msg);
+
+            var targetPlayer = BasePlayer.Find(targetId);
+            if (targetPlayer != null && targetPlayer.IsConnected)
+            {
+                SendReply(targetPlayer, $"<color=#F1C40F>💎 [BALANCE UPDATE]</color> Your GEMS balance was updated to: <color=#F1C40F>{acc.Gems:N0} GEMS</color>.");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", targetPlayer.transform.position);
+            }
         }
 
         [ConsoleCommand("goatui.nav.kits")]
