@@ -1,0 +1,1730 @@
+[
+  {
+    "Id": "kit_vip",
+    "TabName": "VIP",
+    "Title": "VIP",
+    "ColorHex": "0.98 0.73 0.08 1.00",
+    "Currency": "USD",
+    "Price": 500,
+    "PriceText": "5.00$",
+    "Permission": "goatkitsui.vip",
+    "LockType": "VIP",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 2,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "rifle.semiauto",
+        "DisplayName": "SEMI-AUTOMATIC RIFLE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "ammo.rifle",
+        "DisplayName": "5.56 RIFLE AMMO",
+        "Amount": 120,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "roadsign.jacket",
+        "DisplayName": "ROADSIGN JACKET",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 0
+      },
+      {
+        "Shortname": "roadsign.kilt",
+        "DisplayName": "ROADSIGN KILT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 1
+      },
+      {
+        "Shortname": "coffeecan.helmet",
+        "DisplayName": "COFFEE CAN HELMET",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 2
+      },
+      {
+        "Shortname": "shoes.boots",
+        "DisplayName": "LEATHER BOOTS",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 3
+      },
+      {
+        "Shortname": "hoodie",
+        "DisplayName": "HOODIE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 4
+      },
+      {
+        "Shortname": "pants",
+        "DisplayName": "PANTS",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 5
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 25000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONE",
+        "Amount": 25000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 10000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "sulfur",
+        "DisplayName": "SULFUR",
+        "Amount": 2500,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      }
+    ]
+  },
+  {
+    "Id": "kit_mvp",
+    "TabName": "VIP",
+    "Title": "MVP",
+    "ColorHex": "0.00 0.65 1.00 1.00",
+    "Currency": "USD",
+    "Price": 1000,
+    "PriceText": "10.00$",
+    "Permission": "goatkitsui.mvp",
+    "LockType": "MVP",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 2,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "rifle.ak",
+        "DisplayName": "ASSAULT RIFLE (AK-47)",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "smg.thompson",
+        "DisplayName": "THOMPSON SMG",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "ammo.rifle",
+        "DisplayName": "5.56 RIFLE AMMO",
+        "Amount": 250,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "ammo.pistol",
+        "DisplayName": "PISTOL AMMO",
+        "Amount": 200,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "metal.facemask",
+        "DisplayName": "METAL FACEMASK",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 0
+      },
+      {
+        "Shortname": "metal.plate.torso",
+        "DisplayName": "METAL CHESTPLATE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 1
+      },
+      {
+        "Shortname": "roadsign.kilt",
+        "DisplayName": "ROADSIGN KILT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 2
+      },
+      {
+        "Shortname": "tactical.gloves",
+        "DisplayName": "TACTICAL GLOVES",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 3
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      },
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONE",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 20000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      },
+      {
+        "Shortname": "sulfur",
+        "DisplayName": "SULFUR",
+        "Amount": 5000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 5
+      },
+      {
+        "Shortname": "metal.refined",
+        "DisplayName": "HIGH QUALITY METAL (HQM)",
+        "Amount": 1000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 6
+      }
+    ]
+  },
+  {
+    "Id": "kit_god",
+    "TabName": "VIP",
+    "Title": "GOD",
+    "ColorHex": "0.65 0.25 1.00 1.00",
+    "Currency": "USD",
+    "Price": 2000,
+    "PriceText": "20.00$",
+    "Permission": "goatkitsui.god",
+    "LockType": "GOD",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 1,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "lmg.m249",
+        "DisplayName": "M249 LIGHT MACHINE GUN",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "rifle.l96",
+        "DisplayName": "L96 SNIPER RIFLE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "rifle.ak",
+        "DisplayName": "ASSAULT RIFLE (AK-47)",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "rocket.launcher",
+        "DisplayName": "ROCKET LAUNCHER",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      },
+      {
+        "Shortname": "ammo.rocket.basic",
+        "DisplayName": "HV / BASIC ROCKETS",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "explosive.timed",
+        "DisplayName": "TIMED EXPLOSIVE CHARGE (C4)",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "ammo.rifle.hv",
+        "DisplayName": "5.56 HV RIFLE AMMO",
+        "Amount": 500,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "metal.facemask",
+        "DisplayName": "METAL FACEMASK",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 0
+      },
+      {
+        "Shortname": "metal.plate.torso",
+        "DisplayName": "METAL CHESTPLATE",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 1
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 12,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 4
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 5
+      },
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 100000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONE",
+        "Amount": 100000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 5
+      },
+      {
+        "Shortname": "sulfur",
+        "DisplayName": "SULFUR",
+        "Amount": 15000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 6
+      },
+      {
+        "Shortname": "metal.refined",
+        "DisplayName": "HIGH QUALITY METAL (HQM)",
+        "Amount": 5000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 7
+      },
+      {
+        "Shortname": "supply.signal",
+        "DisplayName": "SUPPLY SIGNAL (AIRDROP)",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 8
+      }
+    ]
+  },
+  {
+    "Id": "kit_builder",
+    "TabName": "VIP",
+    "Title": "BUILDER",
+    "ColorHex": "0.15 0.72 0.38 1.00",
+    "Currency": "USD",
+    "Price": 750,
+    "PriceText": "7.50$",
+    "Permission": "goatkitsui.builder",
+    "LockType": "BUILDER",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 2,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "building.planner",
+        "DisplayName": "BUILDING PLANNER",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "hammer",
+        "DisplayName": "BUILDING HAMMER",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "door.hinged.metal",
+        "DisplayName": "SHEET METAL DOOR",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "door.hinged.armored",
+        "DisplayName": "ARMORED DOOR",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "wall.frame.garagedoor",
+        "DisplayName": "GARAGE DOOR",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "cupboard.tool",
+        "DisplayName": "TOOL CUPBOARD",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "box.wooden.large",
+        "DisplayName": "LARGE WOODEN BOX",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      },
+      {
+        "Shortname": "autoturret",
+        "DisplayName": "AUTO TURRET",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 100000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 5
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONE",
+        "Amount": 100000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 6
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 7
+      },
+      {
+        "Shortname": "metal.refined",
+        "DisplayName": "HIGH QUALITY METAL (HQM)",
+        "Amount": 5000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 8
+      }
+    ]
+  },
+  {
+    "Id": "kit_guns",
+    "TabName": "WEAPONS",
+    "Title": "GUNS",
+    "ColorHex": "0.92 0.18 0.18 1.00",
+    "Currency": "USD",
+    "Price": 1200,
+    "PriceText": "12.00$",
+    "Permission": "goatkitsui.guns",
+    "LockType": "GUNS",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 2,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "rifle.ak",
+        "DisplayName": "ASSAULT RIFLE (AK-47)",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "smg.mp5",
+        "DisplayName": "MP5A4 SMG",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "rifle.bolt",
+        "DisplayName": "BOLT ACTION RIFLE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "rifle.l96",
+        "DisplayName": "L96 MILITARY SNIPER",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      },
+      {
+        "Shortname": "weapon.mod.8x.scope",
+        "DisplayName": "8X WEAPON SCOPE",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "weapon.mod.silencer",
+        "DisplayName": "TACTICAL SILENCER",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "weapon.mod.holosight",
+        "DisplayName": "HOLO SIGHT",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "weapon.mod.flashlight",
+        "DisplayName": "WEAPON FLASHLIGHT",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "ammo.rifle",
+        "DisplayName": "5.56 RIFLE AMMO",
+        "Amount": 600,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      },
+      {
+        "Shortname": "ammo.pistol",
+        "DisplayName": "PISTOL AMMO",
+        "Amount": 400,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 5
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 4
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788052139403",
+    "TabName": "RESOURCES",
+    "Title": "BOOSTER",
+    "ColorHex": "0.96 0.68 0.15 1.00",
+    "Currency": "FREE",
+    "Price": 0,
+    "PriceText": "FREE",
+    "Permission": "",
+    "LockType": "BOOSTER",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 6,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "hazmatsuit",
+        "DisplayName": "HAZMAT SUIT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 6
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "bandage",
+        "DisplayName": "BANDAGE",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 4
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 5
+      },
+      {
+        "Shortname": "rifle.ak",
+        "DisplayName": "ASSAULT RIFLE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "barricade.wood.cover",
+        "DisplayName": "WOODEN BARRICADE COVER",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 20
+      },
+      {
+        "Shortname": "bandage",
+        "DisplayName": "BANDAGE",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 22
+      },
+      {
+        "Shortname": "ammo.rifle",
+        "DisplayName": "5.56 RIFLE AMMO",
+        "Amount": 256,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "supply.signal",
+        "DisplayName": "SUPPLY SIGNAL",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 18
+      },
+      {
+        "Shortname": "keycard_green",
+        "DisplayName": "GREEN KEYCARD",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 6
+      },
+      {
+        "Shortname": "keycard_red",
+        "DisplayName": "RED KEYCARD",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 12
+      },
+      {
+        "Shortname": "workbench3",
+        "DisplayName": "WORKBENCH LEVEL 3",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "pookie.bear",
+        "DisplayName": "POOKIE BEAR",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "keycard_blue",
+        "DisplayName": "BLUE KEYCARD",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 7
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788052754422",
+    "TabName": "RESOURCES",
+    "Title": "DISCORD VERIFIED",
+    "ColorHex": "0.96 0.68 0.15 1.00",
+    "Currency": "FREE",
+    "Price": 0,
+    "PriceText": "FREE",
+    "Permission": "",
+    "LockType": "LINKED",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 3,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "metalspring",
+        "DisplayName": "METAL SPRING",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 18
+      },
+      {
+        "Shortname": "riflebody",
+        "DisplayName": "RIFLE BODY",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 19
+      },
+      {
+        "Shortname": "rope",
+        "DisplayName": "ROPE",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 20
+      },
+      {
+        "Shortname": "smgbody",
+        "DisplayName": "SMG BODY",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 21
+      },
+      {
+        "Shortname": "semibody",
+        "DisplayName": "SEMI AUTOMATIC BODY",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 22
+      },
+      {
+        "Shortname": "techparts",
+        "DisplayName": "TECH TRASH",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 23
+      },
+      {
+        "Shortname": "metalpipe",
+        "DisplayName": "METAL PIPE",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 12
+      },
+      {
+        "Shortname": "gears",
+        "DisplayName": "GEARS",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 13
+      },
+      {
+        "Shortname": "roadsigns",
+        "DisplayName": "ROAD SIGNS",
+        "Amount": 50,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 14
+      },
+      {
+        "Shortname": "sewingkit",
+        "DisplayName": "SEWING KIT",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 15
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788053900886",
+    "TabName": "RESOURCES",
+    "Title": "STARTER",
+    "ColorHex": "0.96 0.68 0.15 1.00",
+    "Currency": "FREE",
+    "Price": 0,
+    "PriceText": "FREE",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 1,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "bone.armor.suit",
+        "DisplayName": "BONE ARMOR",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 0
+      },
+      {
+        "Shortname": "deer.skull.mask",
+        "DisplayName": "BONE HELMET",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 1
+      },
+      {
+        "Shortname": "pumpkin",
+        "DisplayName": "PUMPKIN",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "bow.hunting",
+        "DisplayName": "HUNTING BOW",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "bandage",
+        "DisplayName": "BANDAGE",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 5
+      },
+      {
+        "Shortname": "knife.bone",
+        "DisplayName": "BONE KNIFE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "arrow.wooden",
+        "DisplayName": "WOODEN ARROW",
+        "Amount": 24,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "bandage",
+        "DisplayName": "BANDAGE",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 23
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONES",
+        "Amount": 20000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 18
+      },
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 15000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 19
+      },
+      {
+        "Shortname": "sulfur.ore",
+        "DisplayName": "SULFUR ORE",
+        "Amount": 1000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 21
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 2500,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 20
+      },
+      {
+        "Shortname": "cloth",
+        "DisplayName": "CLOTH",
+        "Amount": 500,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "lowgradefuel",
+        "DisplayName": "LOW GRADE FUEL",
+        "Amount": 500,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788055284545",
+    "TabName": "ALL KITS",
+    "Title": "MEDIC",
+    "ColorHex": "0.96 0.68 0.15 1.00",
+    "Currency": "FREE",
+    "Price": 0,
+    "PriceText": "FREE",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 0.15,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 3,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 5
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "bandage",
+        "DisplayName": "BANDAGE",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 4
+      },
+      {
+        "Shortname": "blueberries",
+        "DisplayName": "BLUEBERRIES",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788056396996",
+    "TabName": "RESOURCES",
+    "Title": "REBUILD",
+    "ColorHex": "0.96 0.68 0.15 1.00",
+    "Currency": "FREE",
+    "Price": 0,
+    "PriceText": "FREE",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 0,
+    "WipeLockHours": 19,
+    "MaxUsesPerWipe": 2,
+    "Items": [
+      {
+        "Shortname": "generator.wind.scrap",
+        "DisplayName": "WIND TURBINE",
+        "Amount": 2,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "wall.frame.garagedoor",
+        "DisplayName": "GARAGE DOOR",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "lock.code",
+        "DisplayName": "CODE LOCK",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "autoturret",
+        "DisplayName": "AUTO TURRET",
+        "Amount": 5,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      },
+      {
+        "Shortname": "sulfur.ore",
+        "DisplayName": "SULFUR ORE",
+        "Amount": 36000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "metal.ore",
+        "DisplayName": "METAL ORE",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "metal.ore",
+        "DisplayName": "METAL ORE",
+        "Amount": 15000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "cloth",
+        "DisplayName": "CLOTH",
+        "Amount": 5000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      },
+      {
+        "Shortname": "leather",
+        "DisplayName": "LEATHER",
+        "Amount": 5000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 5
+      },
+      {
+        "Shortname": "riflebody",
+        "DisplayName": "RIFLE BODY",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 6
+      },
+      {
+        "Shortname": "metalspring",
+        "DisplayName": "METAL SPRING",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 7
+      },
+      {
+        "Shortname": "techparts",
+        "DisplayName": "TECH TRASH",
+        "Amount": 25,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 8
+      },
+      {
+        "Shortname": "sewingkit",
+        "DisplayName": "SEWING KIT",
+        "Amount": 50,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 9
+      },
+      {
+        "Shortname": "rope",
+        "DisplayName": "ROPE",
+        "Amount": 100,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 10
+      },
+      {
+        "Shortname": "scrap",
+        "DisplayName": "SCRAP",
+        "Amount": 5000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 11
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 12
+      },
+      {
+        "Shortname": "sulfur",
+        "DisplayName": "SULFUR",
+        "Amount": 20000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 13
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONES",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 14
+      },
+      {
+        "Shortname": "stones",
+        "DisplayName": "STONES",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 15
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788056966057",
+    "TabName": "RESOURCES",
+    "Title": "BAG",
+    "ColorHex": "0.96 0.68 0.15 1.00",
+    "Currency": "FREE",
+    "Price": 0,
+    "PriceText": "FREE",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://discord.gg/7uRsxfknSG",
+    "CooldownHours": 0.1,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "sleepingbag",
+        "DisplayName": "SLEEPING BAG",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "sleepingbag",
+        "DisplayName": "SLEEPING BAG",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "bed",
+        "DisplayName": "BED",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788258768526",
+    "TabName": "GEMS",
+    "Title": "ROAMER T2",
+    "ColorHex": "0.98 0.73 0.08 1.00",
+    "Currency": "GEMS",
+    "Price": 25,
+    "PriceText": "💎 25 GEMS",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://rustgoat.com/",
+    "CooldownHours": 0,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "coffeecan.helmet",
+        "DisplayName": "COFFEE CAN HELMET",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 0
+      },
+      {
+        "Shortname": "pants",
+        "DisplayName": "PANTS",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 1
+      },
+      {
+        "Shortname": "hoodie",
+        "DisplayName": "HOODIE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 2
+      },
+      {
+        "Shortname": "roadsign.gloves",
+        "DisplayName": "ROAD SIGN GLOVES",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 3
+      },
+      {
+        "Shortname": "roadsign.kilt",
+        "DisplayName": "ROAD SIGN KILT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 4
+      },
+      {
+        "Shortname": "roadsign.jacket",
+        "DisplayName": "ROAD SIGN JACKET",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 5
+      },
+      {
+        "Shortname": "smg.thompson",
+        "DisplayName": "THOMPSON",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "sleepingbag",
+        "DisplayName": "SLEEPING BAG",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "barricade.wood.cover",
+        "DisplayName": "WOODEN BARRICADE COVER",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 4,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 4
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 5
+      },
+      {
+        "Shortname": "ammo.pistol",
+        "DisplayName": "PISTOL BULLET",
+        "Amount": 256,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788258995679",
+    "TabName": "GEMS",
+    "Title": "ROAMER T3",
+    "ColorHex": "0.98 0.73 0.08 1.00",
+    "Currency": "GEMS",
+    "Price": 50,
+    "PriceText": "💎 50 GEMS",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://rustgoat.com/",
+    "CooldownHours": 0,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "pants",
+        "DisplayName": "PANTS",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 1
+      },
+      {
+        "Shortname": "hoodie",
+        "DisplayName": "HOODIE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 2
+      },
+      {
+        "Shortname": "roadsign.gloves",
+        "DisplayName": "ROAD SIGN GLOVES",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 3
+      },
+      {
+        "Shortname": "roadsign.kilt",
+        "DisplayName": "ROAD SIGN KILT",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 4
+      },
+      {
+        "Shortname": "metal.plate.torso",
+        "DisplayName": "METAL CHEST PLATE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 0
+      },
+      {
+        "Shortname": "metal.facemask",
+        "DisplayName": "METAL FACEMASK",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "wear",
+        "Slot": 5
+      },
+      {
+        "Shortname": "sleepingbag",
+        "DisplayName": "SLEEPING BAG",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 2
+      },
+      {
+        "Shortname": "barricade.wood.cover",
+        "DisplayName": "WOODEN BARRICADE COVER",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "syringe.medical",
+        "DisplayName": "MEDICAL SYRINGE",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 3
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 3,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 4
+      },
+      {
+        "Shortname": "largemedkit",
+        "DisplayName": "LARGE MEDKIT",
+        "Amount": 6,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 5
+      },
+      {
+        "Shortname": "rifle.ak",
+        "DisplayName": "ASSAULT RIFLE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "ammo.rifle",
+        "DisplayName": "5.56 RIFLE AMMO",
+        "Amount": 256,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788259471855",
+    "TabName": "GEMS",
+    "Title": "BIND BOX",
+    "ColorHex": "0.98 0.73 0.08 1.00",
+    "Currency": "GEMS",
+    "Price": 150,
+    "PriceText": "💎 150 GEMS",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://rustgoat.com/",
+    "CooldownHours": 0,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "wood",
+        "DisplayName": "WOOD",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 0
+      },
+      {
+        "Shortname": "riflebody",
+        "DisplayName": "RIFLE BODY",
+        "Amount": 50,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 1
+      },
+      {
+        "Shortname": "metalspring",
+        "DisplayName": "METAL SPRING",
+        "Amount": 200,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 2
+      },
+      {
+        "Shortname": "metal.refined",
+        "DisplayName": "HIGH QUALITY METAL",
+        "Amount": 6000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 3
+      },
+      {
+        "Shortname": "techparts",
+        "DisplayName": "TECH TRASH",
+        "Amount": 100,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 4
+      },
+      {
+        "Shortname": "metal.fragments",
+        "DisplayName": "METAL FRAGMENTS",
+        "Amount": 50000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 5
+      },
+      {
+        "Shortname": "gunpowder",
+        "DisplayName": "GUN POWDER",
+        "Amount": 25000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 6
+      },
+      {
+        "Shortname": "lowgradefuel",
+        "DisplayName": "LOW GRADE FUEL",
+        "Amount": 25000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 7
+      },
+      {
+        "Shortname": "cloth",
+        "DisplayName": "CLOTH",
+        "Amount": 37000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 8
+      },
+      {
+        "Shortname": "leather",
+        "DisplayName": "LEATHER",
+        "Amount": 10000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 9
+      },
+      {
+        "Shortname": "sewingkit",
+        "DisplayName": "SEWING KIT",
+        "Amount": 1000,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 10
+      },
+      {
+        "Shortname": "roadsigns",
+        "DisplayName": "ROAD SIGNS",
+        "Amount": 200,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 11
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788259649357",
+    "TabName": "GEMS",
+    "Title": "FARMER",
+    "ColorHex": "0.98 0.73 0.08 1.00",
+    "Currency": "GEMS",
+    "Price": 35,
+    "PriceText": "💎 35 GEMS",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://rustgoat.com/",
+    "CooldownHours": 0,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "chainsaw",
+        "DisplayName": "CHAINSAW",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "jackhammer",
+        "DisplayName": "JACKHAMMER",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "lowgradefuel",
+        "DisplayName": "LOW GRADE FUEL",
+        "Amount": 200,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 18
+      },
+      {
+        "Shortname": "supertea",
+        "DisplayName": "SUPER SERUM",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 19
+      }
+    ]
+  },
+  {
+    "Id": "kit_1788260082788",
+    "TabName": "GEMS",
+    "Title": "ELECTRICAL",
+    "ColorHex": "0.98 0.73 0.08 1.00",
+    "Currency": "GEMS",
+    "Price": 50,
+    "PriceText": "💎 50 GEMS",
+    "Permission": "",
+    "LockType": "NONE",
+    "CustomUrl": "https://rustgoat.com/",
+    "CooldownHours": 0,
+    "WipeLockHours": 0,
+    "MaxUsesPerWipe": 0,
+    "Items": [
+      {
+        "Shortname": "generator.wind.scrap",
+        "DisplayName": "WIND TURBINE",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 0
+      },
+      {
+        "Shortname": "cctv.camera",
+        "DisplayName": "CCTV CAMERA",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "belt",
+        "Slot": 1
+      },
+      {
+        "Shortname": "targeting.computer",
+        "DisplayName": "TARGETING COMPUTER",
+        "Amount": 10,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 19
+      },
+      {
+        "Shortname": "electric.battery.rechargable.large",
+        "DisplayName": "LARGE RECHARGEABLE BATTERY",
+        "Amount": 1,
+        "SkinId": 0,
+        "Container": "main",
+        "Slot": 18
+      }
+    ]
+  }
+]

@@ -17,6 +17,7 @@ import {
   logVoiceSession,
   getVoiceLeaderboard,
   getExpiredVips,
+  grantVipSubscription,
   revokeVipSubscription,
 } from "../database/db.js";
 import { setRustServerBooster, setRustServerVip } from "./rcon.js";
@@ -357,6 +358,18 @@ export async function grantVerifiedRole(discordId, steamUser) {
       updateBoosterStatus(steamUser.steam_id, 1);
     }
 
+    // Check if user already has VIP / MVP / GOD / BUILDER / GUNS roles upon linking
+    if (member && member.roles && member.roles.cache) {
+      for (const [, r] of member.roles.cache) {
+        const tier = getTierFromRole(r);
+        if (tier) {
+          console.log(`[Bot Link] 👑 Member has existing ${tier.toUpperCase()} role — syncing to Rust (${steamUser.steam_id})...`);
+          await setRustServerVip(steamUser.steam_id, true, tier, steamUser.steam_name);
+          grantVipSubscription(steamUser.steam_id, tier, 30);
+        }
+      }
+    }
+
     return { success: true };
   } catch (err) {
     console.error("[Bot] Error in grantVerifiedRole:", err.message);
@@ -641,8 +654,107 @@ function startVoiceFlushLoop() {
   }, 30000);
 }
 
+const TIER_ROLE_NAMES = ["god", "mvp", "vip", "builder", "guns"];
+
+export function getTierFromRole(role) {
+  if (!role) return null;
+  const roleName = String(role.name || "").toLowerCase().trim();
+  const roleId = String(role.id || "").trim();
+
+  for (const [tier, id] of Object.entries(config.discord.tierRoles || {})) {
+    if (id && roleId === String(id).trim()) return tier.toLowerCase();
+  }
+
+  for (const tier of TIER_ROLE_NAMES) {
+    const regex = new RegExp(`\\b${tier}\\b`, "i");
+    if (regex.test(roleName) || roleName.includes(tier)) {
+      return tier;
+    }
+  }
+  return null;
+}
+
+export async function handleRoleUpdates(oldMember, newMember) {
+  const addedRoles = newMember.roles.cache.filter((r) => !oldMember.roles.cache.has(r.id));
+  const removedRoles = oldMember.roles.cache.filter((r) => !newMember.roles.cache.has(r.id));
+
+  for (const [, role] of addedRoles) {
+    const tier = getTierFromRole(role);
+    if (!tier) continue;
+
+    console.log(`[Discord Roles] 💎 Member ${newMember.user.tag} received ${tier.toUpperCase()} role (${role.name})!`);
+    const user = getUserByDiscordId(newMember.id);
+
+    if (user && user.steam_id) {
+      await setRustServerVip(user.steam_id, true, tier, user.steam_name);
+      grantVipSubscription(user.steam_id, tier, 30);
+
+      if (config.discord.logChannelId) {
+        try {
+          const logChan = await botClient.channels.fetch(config.discord.logChannelId);
+          if (logChan?.isTextBased()) {
+            const embed = new EmbedBuilder()
+              .setTitle(`👑 In-Game Rank Granted: ${tier.toUpperCase()}`)
+              .setColor(0x00ff88)
+              .setDescription(`Discord member <@${newMember.id}> was granted the **${tier.toUpperCase()}** role.`)
+              .addFields(
+                { name: "🎮 Steam User", value: `**${user.steam_name}**`, inline: true },
+                { name: "🆔 SteamID", value: `\`${user.steam_id}\``, inline: true },
+                { name: "⭐ Kit / Rank", value: `**${tier.toUpperCase()}** (30 Days)`, inline: true }
+              )
+              .setFooter({ text: "GOAT SERVERS • Role Integration" })
+              .setTimestamp();
+            await logChan.send({ embeds: [embed] });
+          }
+        } catch (_) {}
+      }
+
+      try {
+        const dmEmbed = new EmbedBuilder()
+          .setTitle(`🎉 Your ${tier.toUpperCase()} Rank is Active on GOAT 5X!`)
+          .setColor(0xf5a623)
+          .setDescription(
+            `Hey **${user.steam_name}**, your **${tier.toUpperCase()}** rank has been granted!\n\n` +
+            `🎁 **In-Game Perks:**\n` +
+            `• Type \`/kit\` in Rust to claim your exclusive **${tier.toUpperCase()} Kit**\n` +
+            `• HQ Building Upgrade & queue privileges unlocked!\n\n` +
+            `Thank you for supporting **GOAT SERVERS**!`
+          )
+          .setFooter({ text: "GOAT SERVERS" });
+        await newMember.send({ embeds: [dmEmbed] }).catch(() => {});
+      } catch (_) {}
+    } else {
+      console.warn(`[Discord Roles] ⚠️ Member ${newMember.user.tag} received ${tier.toUpperCase()} but Steam account is not linked.`);
+      try {
+        const linkEmbed = new EmbedBuilder()
+          .setTitle(`⚠️ Action Required: Link Your Steam Account!`)
+          .setColor(0xff9900)
+          .setDescription(
+            `You were given the **${tier.toUpperCase()}** role in Discord, but your Steam account is not linked yet!\n\n` +
+            `👉 **Link your Steam account now to instantly receive your in-game kits & perks:**\n` +
+            `[Click here to Link Steam](${config.baseUrl}/auth/steam)`
+          )
+          .setFooter({ text: "GOAT SERVERS" });
+        await newMember.send({ embeds: [linkEmbed] }).catch(() => {});
+      } catch (_) {}
+    }
+  }
+
+  for (const [, role] of removedRoles) {
+    const tier = getTierFromRole(role);
+    if (!tier) continue;
+
+    console.log(`[Discord Roles] 🔒 Member ${newMember.user.tag} lost ${tier.toUpperCase()} role (${role.name}).`);
+    const user = getUserByDiscordId(newMember.id);
+    if (user && user.steam_id) {
+      await setRustServerVip(user.steam_id, false, tier, user.steam_name);
+      revokeVipSubscription(user.steam_id, tier);
+    }
+  }
+}
+
 /**
- * Setup GuildMemberUpdate + GuildMemberAdd listeners for Discord Server Boost detection.
+ * Setup GuildMemberUpdate + GuildMemberAdd listeners for Discord Server Boost & Role detection.
  */
 function setupBoosterListener() {
   botClient.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
@@ -659,6 +771,9 @@ function setupBoosterListener() {
         console.log(`[Discord Boost] ⚠️ ${newMember.user.tag} (${newMember.id}) STOPPED boosting.`);
         await handleMemberBoostEnd(newMember);
       }
+
+      // VIP / MVP / GOD / BUILDER / GUNS role detection
+      await handleRoleUpdates(oldMember, newMember);
     } catch (err) {
       console.error("[Discord Boost GuildMemberUpdate Error]:", err.message);
     }

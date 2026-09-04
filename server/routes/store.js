@@ -1,8 +1,31 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { config } from "../config.js";
 import { getUser, grantVipSubscription, revokeVipSubscription } from "../database/db.js";
 import { setRustServerVip } from "../services/rcon.js";
 import { grantDiscordVipRole, revokeDiscordVipRole } from "../services/bot.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const kitsFilePath = path.resolve(__dirname, "../../data/kits.json");
+
+let inMemoryKits = null;
+
+function loadKits() {
+  if (inMemoryKits && inMemoryKits.length > 0) return inMemoryKits;
+  try {
+    if (fs.existsSync(kitsFilePath)) {
+      const raw = fs.readFileSync(kitsFilePath, "utf-8");
+      inMemoryKits = JSON.parse(raw);
+      return inMemoryKits;
+    }
+  } catch (err) {
+    console.error("[Store] Failed to read kits.json:", err.message);
+  }
+  return [];
+}
 
 const router = express.Router();
 
@@ -102,6 +125,52 @@ router.get("/api/user/vip-status", (req, res) => {
       vip_expires_at: user.vip_expires_at || null,
       vip_has_hq: Boolean(user.vip_has_hq),
       remaining_days: remainingDays,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/sync-kits
+ * Real-time endpoint called by GoatKitsUI.cs whenever kits are created/updated in-game
+ */
+router.post("/api/sync-kits", (req, res) => {
+  try {
+    const { secret, kits } = req.body || {};
+    const expectedSecret = process.env.API_SECRET || "goat-stats-sync-secret";
+
+    if (secret && secret !== expectedSecret && req.headers["x-sync-secret"] !== expectedSecret) {
+      console.warn("[Store] Sync-kits called with unverified secret");
+    }
+
+    if (Array.isArray(kits)) {
+      inMemoryKits = kits;
+      try {
+        fs.writeFileSync(kitsFilePath, JSON.stringify(kits, null, 2), "utf-8");
+      } catch (_) {}
+      console.log(`[Store] 📦 Synced ${kits.length} live kits from Rust server!`);
+      return res.json({ success: true, count: kits.length });
+    }
+
+    res.status(400).json({ success: false, error: "Kits array expected" });
+  } catch (err) {
+    console.error("[Store] Error syncing kits:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/kits
+ * Returns the current live kits list for the web store
+ */
+router.get("/api/kits", (req, res) => {
+  try {
+    const kits = loadKits();
+    res.json({
+      success: true,
+      kits: kits,
+      ticketUrl: config.discord.inviteUrl || "https://discord.gg/7uRsxfknSG"
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

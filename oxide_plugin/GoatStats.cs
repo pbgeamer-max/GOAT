@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Oxide.Core;
 using Oxide.Core.Libraries;
 using UnityEngine;
@@ -184,7 +185,7 @@ namespace Oxide.Plugins
                     }
                 };
 
-                string json = Oxide.Core.Libraries.Covalence.Formatter.ToPlaintext(Oxide.Core.Libraries.Covalence.Utility.ConvertToJson(payload));
+                string json = JsonConvert.SerializeObject(payload);
 
                 webrequest.Enqueue(
                     ApiEndpoint,

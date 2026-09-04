@@ -207,8 +207,9 @@ export async function setRustServerVip(steamId, isVip = true, tier = "vip", stea
       await executeRconCommand(`o.grant user ${cleanSteamId} buildinggrade.toptier`).catch(() => {});
       await executeRconCommand(`o.grant user ${cleanSteamId} bgrade.4`).catch(() => {});
 
-      // 3. Grant Kit permission
+      // 3. Grant Kit permission & UI role state
       await executeRconCommand(`o.grant user ${cleanSteamId} goatkitsui.${cleanTier}`).catch(() => {});
+      await executeRconCommand(`goatui.setrole ${cleanSteamId} ${cleanTier} true`).catch(() => {});
 
       // 4. In-Game Chat Announcement
       await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} unlocked ${cleanTier.toUpperCase()} & HQ Building Upgrade (30 Days)!`).catch(() => {});
@@ -223,8 +224,9 @@ export async function setRustServerVip(steamId, isVip = true, tier = "vip", stea
       await executeRconCommand(`o.revoke user ${cleanSteamId} buildinggrade.toptier`).catch(() => {});
       await executeRconCommand(`o.revoke user ${cleanSteamId} bgrade.4`).catch(() => {});
 
-      // 3. Revoke Kit permission
+      // 3. Revoke Kit permission & UI role state
       await executeRconCommand(`o.revoke user ${cleanSteamId} goatkitsui.${cleanTier}`).catch(() => {});
+      await executeRconCommand(`goatui.setrole ${cleanSteamId} ${cleanTier} false`).catch(() => {});
 
       console.log(`[RCON VIP] 🔒 Revoked ${cleanTier} + upgrade.hq for [${cleanSteamId}] (${steamName})`);
     }
