@@ -78,15 +78,18 @@ namespace Oxide.Plugins
         private PlayerData playerData;
         private StatsData statsData;
         private ShopData shopData;
+        private SkinboxData skinboxData;
 
         private HashSet<ulong> openUiPlayers = new HashSet<ulong>();
         private Dictionary<ulong, string> activeMenu = new Dictionary<ulong, string>();
         private Dictionary<ulong, string> activePlayerTabs = new Dictionary<ulong, string>();
         private Dictionary<ulong, string> activeStatsTabs = new Dictionary<ulong, string>();
         private Dictionary<ulong, string> activeShopCategory = new Dictionary<ulong, string>();
+        private Dictionary<ulong, string> activeSkinboxCategory = new Dictionary<ulong, string>();
         private Dictionary<ulong, int> playerPages = new Dictionary<ulong, int>();
         private Dictionary<ulong, DraftKit> playerDrafts = new Dictionary<ulong, DraftKit>();
         private Dictionary<ulong, DraftShopItem> shopDrafts = new Dictionary<ulong, DraftShopItem>();
+        private Dictionary<ulong, DraftSkinboxItem> skinDrafts = new Dictionary<ulong, DraftSkinboxItem>();
         private Dictionary<ulong, string> newTabInput = new Dictionary<ulong, string>();
         private Timer hourlyGemsTimer;
 
@@ -175,6 +178,8 @@ namespace Oxide.Plugins
             public bool IsGuns = false;
             public long LastGemRewardTimestamp = 0;
             public Dictionary<string, long> TierExpiry = new Dictionary<string, long>();
+            public List<ulong> PurchasedSkins = new List<ulong>();
+            public Dictionary<string, ulong> ActiveCraftSkins = new Dictionary<string, ulong>();
         }
 
         public class PlayerData
@@ -221,6 +226,30 @@ namespace Oxide.Plugins
         public class ShopData
         {
             public Dictionary<string, List<ShopItemModel>> Categories = new Dictionary<string, List<ShopItemModel>>();
+        }
+
+        public class SkinboxItem
+        {
+            public string Id;
+            public string Shortname;
+            public string Title;
+            public ulong SkinId;
+            public int Price = 50;
+            public string Category = "WEAPONS";
+        }
+
+        public class SkinboxData
+        {
+            public List<SkinboxItem> Skins = new List<SkinboxItem>();
+        }
+
+        public class DraftSkinboxItem
+        {
+            public string Shortname = "rifle.ak";
+            public string Title = "AK-47 SKIN";
+            public string SkinIdInput = "0";
+            public string PriceInput = "50";
+            public string Category = "WEAPONS";
         }
 
         public class PluginConfig
@@ -559,6 +588,8 @@ namespace Oxide.Plugins
             {
                 if (acc == null) continue;
                 if (acc.TierExpiry == null) acc.TierExpiry = new Dictionary<string, long>();
+                if (acc.PurchasedSkins == null) acc.PurchasedSkins = new List<ulong>();
+                if (acc.ActiveCraftSkins == null) acc.ActiveCraftSkins = new Dictionary<string, ulong>();
                 if (acc.IsGod)
                 {
                     acc.IsMvp = false;
@@ -618,6 +649,34 @@ namespace Oxide.Plugins
         {
             if (shopData != null)
                 Interface.Oxide.DataFileSystem.WriteObject("GoatKits_Shop", shopData);
+        }
+
+        private void LoadSkinboxData()
+        {
+            try { skinboxData = Interface.Oxide.DataFileSystem.ReadObject<SkinboxData>("GoatKits_Skinbox"); }
+            catch { skinboxData = new SkinboxData(); }
+
+            if (skinboxData == null) skinboxData = new SkinboxData();
+            if (skinboxData.Skins == null) skinboxData.Skins = new List<SkinboxItem>();
+
+            if (skinboxData.Skins.Count == 0)
+            {
+                skinboxData.Skins.Add(new SkinboxItem { Id = "ak_glory", Shortname = "rifle.ak", Title = "GLORY AK-47", SkinId = 849047662, Price = 100, Category = "WEAPONS" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "ak_tempered", Shortname = "rifle.ak", Title = "TEMPERED AK", SkinId = 887494035, Price = 120, Category = "WEAPONS" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "ak_alien", Shortname = "rifle.ak", Title = "ALIEN RELIC AK", SkinId = 1359893925, Price = 150, Category = "WEAPONS" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "mp5_polymer", Shortname = "smg.mp5", Title = "POLYMER MP5", SkinId = 811197669, Price = 80, Category = "WEAPONS" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "bolt_corrosion", Shortname = "rifle.bolt", Title = "CORROSION BOLT", SkinId = 848602905, Price = 90, Category = "WEAPONS" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "door_toxic", Shortname = "door.hinged.metal", Title = "TOXIC SHEET DOOR", SkinId = 824205565, Price = 50, Category = "DOORS" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "mask_biggrin", Shortname = "metal.facemask", Title = "BIG GRIN MASK", SkinId = 1587843663, Price = 200, Category = "ARMOR" });
+                skinboxData.Skins.Add(new SkinboxItem { Id = "chest_tempered", Shortname = "metal.plate.torso", Title = "TEMPERED CHEST", SkinId = 887494035, Price = 150, Category = "ARMOR" });
+                SaveSkinboxData();
+            }
+        }
+
+        private void SaveSkinboxData()
+        {
+            if (skinboxData != null)
+                Interface.Oxide.DataFileSystem.WriteObject("GoatKits_Skinbox", skinboxData);
         }
 
         #endregion
@@ -1072,11 +1131,17 @@ namespace Oxide.Plugins
                     RP = 0,
                     IsLinked = false,
                     IsBooster = false,
-                    LastGemRewardTimestamp = GetCurrentUnix()
+                    LastGemRewardTimestamp = GetCurrentUnix(),
+                    PurchasedSkins = new List<ulong>(),
+                    ActiveCraftSkins = new Dictionary<string, ulong>()
                 };
             }
             if (!string.IsNullOrEmpty(name))
                 playerData.Accounts[userId].Name = name;
+            if (playerData.Accounts[userId].PurchasedSkins == null)
+                playerData.Accounts[userId].PurchasedSkins = new List<ulong>();
+            if (playerData.Accounts[userId].ActiveCraftSkins == null)
+                playerData.Accounts[userId].ActiveCraftSkins = new Dictionary<string, ulong>();
             return playerData.Accounts[userId];
         }
 
@@ -1398,6 +1463,30 @@ namespace Oxide.Plugins
             }
         }
 
+        void OnItemCraftFinished(ItemCraftTask task, Item item)
+        {
+            if (task == null || item == null || item.info == null) return;
+            BasePlayer player = task.owner;
+            if (player == null) return;
+
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            if (acc == null || acc.ActiveCraftSkins == null) return;
+
+            string shortname = item.info.shortname;
+            if (acc.ActiveCraftSkins.TryGetValue(shortname, out ulong skinId) && skinId > 0)
+            {
+                item.skin = skinId;
+                item.MarkDirty();
+
+                var heldEntity = item.GetHeldEntity();
+                if (heldEntity != null)
+                {
+                    heldEntity.skinID = skinId;
+                    heldEntity.SendNetworkUpdate();
+                }
+            }
+        }
+
         #endregion
 
         #region Initialization & Commands
@@ -1417,6 +1506,7 @@ namespace Oxide.Plugins
             LoadPlayerData();
             LoadStatsData();
             LoadShopData();
+            LoadSkinboxData();
 
             hourlyGemsTimer = timer.Every(60f, ProcessHourlyGems);
             timer.Once(3f, SyncKitsToWeb);
@@ -1428,6 +1518,7 @@ namespace Oxide.Plugins
             SavePlayerData();
             SaveStatsData();
             SaveShopData();
+            SaveSkinboxData();
         }
 
         void Unload()
@@ -1439,6 +1530,7 @@ namespace Oxide.Plugins
             SavePlayerData();
             SaveStatsData();
             SaveShopData();
+            SaveSkinboxData();
         }
 
         void OnNewSave()
@@ -1459,6 +1551,15 @@ namespace Oxide.Plugins
 
         [ChatCommand("shop")]
         private void CmdShop(BasePlayer player, string cmd, string[] args) => OpenShopUI(player);
+
+        [ChatCommand("skinbox")]
+        private void CmdSkinbox(BasePlayer player, string cmd, string[] args) => OpenSkinboxUI(player);
+
+        [ChatCommand("skins")]
+        private void CmdSkins(BasePlayer player, string cmd, string[] args) => OpenSkinboxUI(player);
+
+        [ChatCommand("sb")]
+        private void CmdSb(BasePlayer player, string cmd, string[] args) => OpenSkinboxUI(player);
 
         [ChatCommand("stats")]
         private void CmdStats(BasePlayer player, string cmd, string[] args) => OpenStatisticsUI(player);
@@ -1616,7 +1717,7 @@ namespace Oxide.Plugins
                 baseElements.Add(new CuiPanel
                 {
                     Image = { Color = "0 0 0 0" },
-                    RectTransform = { AnchorMin = "0.045 0.40", AnchorMax = "0.955 0.75" }
+                    RectTransform = { AnchorMin = "0.045 0.33", AnchorMax = "0.955 0.76" }
                 }, "SidebarPanel", "NavButtonsContainer");
 
                 // Balance Area
@@ -1648,12 +1749,12 @@ namespace Oxide.Plugins
             navContainer.Add(new CuiPanel
             {
                 Image = { Color = "0 0 0 0" },
-                RectTransform = { AnchorMin = "0.045 0.40", AnchorMax = "0.955 0.75" }
+                RectTransform = { AnchorMin = "0.045 0.33", AnchorMax = "0.955 0.76" }
             }, "SidebarPanel", "NavButtonsContainer");
 
-            string[] navItems = { "KITS", "SHOP", "STATISTICS", "COMMANDS" };
-            float btnH = 0.20f;
-            float btnGap = 0.05f;
+            string[] navItems = { "KITS", "SHOP", "SKINBOX", "STATISTICS", "COMMANDS" };
+            float btnH = 0.165f;
+            float btnGap = 0.035f;
 
             for (int i = 0; i < navItems.Length; i++)
             {
@@ -1662,7 +1763,7 @@ namespace Oxide.Plugins
                 float yMax = 1.0f - (i * (btnH + btnGap));
                 float yMin = yMax - btnH;
 
-                string cmd = (nav == "KITS") ? "goatui.nav.kits" : ((nav == "SHOP") ? "goatui.nav.shop" : ((nav == "STATISTICS") ? "goatui.nav.stats" : ""));
+                string cmd = (nav == "KITS") ? "goatui.nav.kits" : ((nav == "SHOP") ? "goatui.nav.shop" : ((nav == "SKINBOX") ? "goatui.nav.skinbox" : ((nav == "STATISTICS") ? "goatui.nav.stats" : "")));
 
                 navContainer.Add(new CuiButton
                 {
@@ -2307,6 +2408,291 @@ namespace Oxide.Plugins
                         {
                             Button = { Color = ColorCloseRed, Command = $"goatui.shop.delitem {currentCategory} {i}" },
                             RectTransform = { AnchorMin = "0.80 0.80", AnchorMax = "0.99 0.99" },
+                            Text = { Text = "✕", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                        }, cellId);
+                    }
+                }
+            }
+
+            CuiHelper.AddUi(player, elements);
+        }
+
+        #endregion
+
+        #region UI Rendering: Seamless SKINBOX UI
+
+        private void OpenSkinboxUI(BasePlayer player)
+        {
+            activeMenu[player.userID] = "SKINBOX";
+            EnsureBaseShell(player, "SKINBOX");
+            ClearContentOnly(player);
+
+            var elements = new CuiElementContainer();
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0" },
+                RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
+            }, LayerMain, LayerContent);
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.095 0.105 0.12 0.985" },
+                RectTransform = { AnchorMin = "0.08 0.10", AnchorMax = "0.94 0.90" }
+            }, LayerContent, "SkinboxBox");
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.055 0.06 0.07 0.99" },
+                RectTransform = { AnchorMin = "0 0.908", AnchorMax = "1 1" }
+            }, "SkinboxBox", "SkinboxHeader");
+
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"{config.ServerName.ToUpper()} SKINBOX", FontSize = 14, Align = TextAnchor.MiddleLeft, Color = "0.92 0.93 0.95 1.0", Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.035 0", AnchorMax = "0.5 1" }
+            }, "SkinboxHeader");
+
+            if (HasRank(player))
+            {
+                elements.Add(new CuiButton
+                {
+                    Button = { Color = "0.10 0.30 0.55 0.90", Command = "goatui.skinbox.openaddmodal" },
+                    RectTransform = { AnchorMin = "0.78 0.12", AnchorMax = "0.92 0.88" },
+                    Text = { Text = "+ ADD SKIN", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                }, "SkinboxHeader");
+            }
+
+            elements.Add(new CuiButton
+            {
+                Button = { Color = "0 0 0 0", Command = "goatui.close" },
+                RectTransform = { AnchorMin = "0.925 0.935", AnchorMax = "0.99 0.98" },
+                Text = { Text = "CLOSE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.94 0.30 0.30 1.00", Font = "robotocondensed-bold.ttf" }
+            }, LayerContent);
+
+            if (!activeSkinboxCategory.ContainsKey(player.userID) || string.IsNullOrEmpty(activeSkinboxCategory[player.userID]))
+                activeSkinboxCategory[player.userID] = "ALL";
+
+            string currentCategory = activeSkinboxCategory[player.userID];
+
+            // Categories Sidebar inside Skinbox
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0" },
+                RectTransform = { AnchorMin = "0.012 0.02", AnchorMax = "0.225 0.895" }
+            }, "SkinboxBox", "SkinboxNavPanel");
+
+            var categories = new List<(string key, string display, string iconShort, string emoji)>
+            {
+                ("ALL", "ALL SKINS", "rifle.ak", "✨"),
+                ("WEAPONS", "WEAPONS", "rifle.ak", "🔫"),
+                ("ARMOR", "ARMOR", "metal.facemask", "🛡️"),
+                ("DOORS", "DOORS", "door.hinged.metal", "🚪"),
+                ("MISC", "MISC", "box.wooden.large", "📦"),
+                ("OWNED", "MY SKINS", "", "⭐")
+            };
+
+            float catY = 1.0f;
+            float catH = 0.115f;
+            float catGap = 0.012f;
+
+            for (int i = 0; i < categories.Count; i++)
+            {
+                var cat = categories[i];
+                bool isSel = cat.key.Equals(currentCategory, StringComparison.OrdinalIgnoreCase);
+                float yMax = catY - (i * (catH + catGap));
+                float yMin = yMax - catH;
+
+                string rowId = $"SkinCat_{i}";
+                string catBtnColor = isSel ? ColorActiveBlue : "0.11 0.12 0.15 0.95";
+
+                elements.Add(new CuiButton
+                {
+                    Button = { Color = catBtnColor, Command = $"goatui.skinbox.tab {cat.key}" },
+                    RectTransform = { AnchorMin = $"0 {yMin}", AnchorMax = $"1 {yMax}" },
+                    Text = { Text = "" }
+                }, "SkinboxNavPanel", rowId);
+
+                if (!string.IsNullOrEmpty(cat.iconShort))
+                {
+                    ItemDefinition catDef = ItemManager.FindItemDefinition(cat.iconShort);
+                    if (catDef != null)
+                    {
+                        elements.Add(new CuiElement
+                        {
+                            Parent = rowId,
+                            Components =
+                            {
+                                new CuiImageComponent { ItemId = catDef.itemid, Color = "1 1 1 1" },
+                                new CuiRectTransformComponent { AnchorMin = "0.07 0.5", AnchorMax = "0.07 0.5", OffsetMin = "0 -12", OffsetMax = "24 12" }
+                            }
+                        });
+                    }
+                }
+                else
+                {
+                    elements.Add(new CuiLabel
+                    {
+                        Text = { Text = cat.emoji, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = ColorGoldYellow },
+                        RectTransform = { AnchorMin = "0.07 0", AnchorMax = "0.29 1" }
+                    }, rowId);
+                }
+
+                elements.Add(new CuiLabel
+                {
+                    Text = { Text = cat.display, FontSize = 12, Align = TextAnchor.MiddleLeft, Color = isSel ? ColorTextWhite : "0.78 0.82 0.88 1.00", Font = "robotocondensed-bold.ttf" },
+                    RectTransform = { AnchorMin = "0.30 0", AnchorMax = "0.97 1" }
+                }, rowId);
+            }
+
+            // Skins Grid Area
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0" },
+                RectTransform = { AnchorMin = "0.237 0.03", AnchorMax = "0.985 0.892" }
+            }, "SkinboxBox", "SkinboxGridArea");
+
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            var allSkins = skinboxData?.Skins ?? new List<SkinboxItem>();
+            List<SkinboxItem> displayList;
+
+            if (currentCategory.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+                displayList = allSkins;
+            else if (currentCategory.Equals("OWNED", StringComparison.OrdinalIgnoreCase))
+                displayList = allSkins.Where(s => acc.PurchasedSkins != null && acc.PurchasedSkins.Contains(s.SkinId)).ToList();
+            else
+                displayList = allSkins.Where(s => s.Category.Equals(currentCategory, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (displayList.Count == 0)
+            {
+                string emptyMsg = currentCategory.Equals("OWNED", StringComparison.OrdinalIgnoreCase)
+                    ? "You have not purchased any custom skins yet.\n\nBrowse the WEAPONS, ARMOR, or DOORS tabs to purchase permanent skins with GEMS!"
+                    : (HasRank(player) ? $"No skins found in [{currentCategory}] yet.\n\nClick '+ ADD SKIN' in the top-right to add skins." : $"No skins currently available in [{currentCategory}].");
+
+                elements.Add(new CuiLabel
+                {
+                    Text = { Text = emptyMsg, FontSize = 12, Align = TextAnchor.MiddleCenter, Color = ColorTextMuted, Font = "robotocondensed-bold.ttf" },
+                    RectTransform = { AnchorMin = "0.1 0.3", AnchorMax = "0.9 0.7" }
+                }, "SkinboxGridArea");
+            }
+            else
+            {
+                int cols = 6;
+                int rows = 3;
+                float cellW = 0.1617f;
+                float cellH = 0.3253f;
+                float gapX = 0.006f;
+                float gapY = 0.012f;
+
+                for (int i = 0; i < Math.Min(displayList.Count, cols * rows); i++)
+                {
+                    var skin = displayList[i];
+                    int c = i % cols;
+                    int r = i / cols;
+
+                    float xMin = c * (cellW + gapX);
+                    float xMax = xMin + cellW;
+                    float yMax = 1.0f - (r * (cellH + gapY));
+                    float yMin = yMax - cellH;
+
+                    string cellId = $"SkinCell_{i}";
+                    bool isOwned = acc.PurchasedSkins != null && acc.PurchasedSkins.Contains(skin.SkinId);
+                    bool isActiveCraft = isOwned && acc.ActiveCraftSkins != null && acc.ActiveCraftSkins.TryGetValue(skin.Shortname, out ulong activeSkin) && activeSkin == skin.SkinId;
+
+                    elements.Add(new CuiPanel
+                    {
+                        Image = { Color = "0.135 0.145 0.16 0.98" },
+                        RectTransform = { AnchorMin = $"{xMin} {yMin}", AnchorMax = $"{xMax} {yMax}" }
+                    }, "SkinboxGridArea", cellId);
+
+                    // Badge top-left
+                    if (isActiveCraft)
+                    {
+                        elements.Add(new CuiLabel
+                        {
+                            Text = { Text = "<color=#2ECC71>● ACTIVE</color>", FontSize = 9, Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf" },
+                            RectTransform = { AnchorMin = "0.06 0.82", AnchorMax = "0.75 0.96" }
+                        }, cellId);
+                    }
+                    else if (isOwned)
+                    {
+                        elements.Add(new CuiLabel
+                        {
+                            Text = { Text = "<color=#00A8FF>OWNED</color>", FontSize = 9, Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf" },
+                            RectTransform = { AnchorMin = "0.06 0.82", AnchorMax = "0.75 0.96" }
+                        }, cellId);
+                    }
+                    else
+                    {
+                        elements.Add(new CuiLabel
+                        {
+                            Text = { Text = "<color=#F1C40F>◆</color>", FontSize = 13, Align = TextAnchor.MiddleLeft, Color = ColorGoldYellow },
+                            RectTransform = { AnchorMin = "0.06 0.82", AnchorMax = "0.25 0.96" }
+                        }, cellId);
+                    }
+
+                    // Item Image with Skin preview
+                    ItemDefinition itemDef = ItemManager.FindItemDefinition(skin.Shortname);
+                    if (itemDef != null)
+                    {
+                        elements.Add(new CuiElement
+                        {
+                            Parent = cellId,
+                            Components =
+                            {
+                                new CuiImageComponent { ItemId = itemDef.itemid, SkinId = skin.SkinId, Color = "1 1 1 1" },
+                                new CuiRectTransformComponent { AnchorMin = "0.5 0.54", AnchorMax = "0.5 0.54", OffsetMin = "-36 -26", OffsetMax = "36 38" }
+                            }
+                        });
+                    }
+
+                    // Title
+                    string titleText = !string.IsNullOrEmpty(skin.Title) ? skin.Title : (itemDef?.displayName?.english?.ToUpper() ?? skin.Shortname.ToUpper());
+                    if (titleText.Length > 15) titleText = titleText.Substring(0, 14) + "..";
+
+                    elements.Add(new CuiLabel
+                    {
+                        Text = { Text = $"<b>{titleText}</b>", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                        RectTransform = { AnchorMin = "0.04 0.22", AnchorMax = "0.96 0.32" }
+                    }, cellId);
+
+                    // Price / Status Label
+                    string priceOrStatus = isOwned ? "<color=#2ECC71>PERMANENT</color>" : $"<color=#F1C40F>◆ {skin.Price:N0} GEMS</color>";
+                    elements.Add(new CuiLabel
+                    {
+                        Text = { Text = priceOrStatus, FontSize = 9, Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" },
+                        RectTransform = { AnchorMin = "0.04 0.12", AnchorMax = "0.96 0.22" }
+                    }, cellId);
+
+                    // Action Button (Buy / Equip / Active)
+                    if (!isOwned)
+                    {
+                        elements.Add(new CuiButton
+                        {
+                            Button = { Color = ColorTabGems, Command = $"goatui.skinbox.buy {skin.Id}" },
+                            RectTransform = { AnchorMin = "0.06 0.02", AnchorMax = "0.94 0.11" },
+                            Text = { Text = $"BUY (◆ {skin.Price})", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = "0.05 0.05 0.05 1.0", Font = "robotocondensed-bold.ttf" }
+                        }, cellId);
+                    }
+                    else
+                    {
+                        string btnText = isActiveCraft ? "✓ CRAFT ACTIVE" : "EQUIP TO CRAFT";
+                        string btnCol = isActiveCraft ? ColorSuccess : ColorActiveBlue;
+                        elements.Add(new CuiButton
+                        {
+                            Button = { Color = btnCol, Command = $"goatui.skinbox.equip {skin.Id}" },
+                            RectTransform = { AnchorMin = "0.06 0.02", AnchorMax = "0.94 0.11" },
+                            Text = { Text = btnText, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                        }, cellId);
+                    }
+
+                    // Admin Delete Button
+                    if (HasRank(player))
+                    {
+                        elements.Add(new CuiButton
+                        {
+                            Button = { Color = ColorCloseRed, Command = $"goatui.skinbox.delskin {skin.Id}" },
+                            RectTransform = { AnchorMin = "0.80 0.82", AnchorMax = "0.98 0.98" },
                             Text = { Text = "✕", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
                         }, cellId);
                     }
@@ -3174,6 +3560,221 @@ namespace Oxide.Plugins
             CuiHelper.AddUi(player, elements);
         }
 
+        private void OpenSkinboxCreatorModal(BasePlayer player)
+        {
+            if (!HasRank(player) || !skinDrafts.ContainsKey(player.userID)) return;
+            var draft = skinDrafts[player.userID];
+
+            CuiHelper.DestroyUi(player, LayerModal);
+            var elements = new CuiElementContainer();
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorBgDimmer },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                CursorEnabled = true
+            }, LayerMain, LayerModal);
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorModalBg },
+                RectTransform = { AnchorMin = "0.22 0.12", AnchorMax = "0.78 0.88" }
+            }, LayerModal, "SkinboxModalBox");
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorActiveBlue },
+                RectTransform = { AnchorMin = "0 0.92", AnchorMax = "1 1" }
+            }, "SkinboxModalBox", "SkinModalHeader");
+
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = "🎨 SKINBOX BUILDER (ADD CUSTOM SKIN)", FontSize = 13, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+            }, "SkinModalHeader");
+
+            // 1. Target Category
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"1. TARGET CATEGORY:  [ <color=#2ECC71>{draft.Category}</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.05 0.85", AnchorMax = "0.95 0.895" }
+            }, "SkinboxModalBox");
+
+            string[] sCats = { "WEAPONS", "ARMOR", "DOORS", "MISC" };
+            float sCatW = 0.21f;
+            for (int i = 0; i < sCats.Length; i++)
+            {
+                string cKey = sCats[i];
+                bool isSel = cKey.Equals(draft.Category, StringComparison.OrdinalIgnoreCase);
+                float xMin = 0.05f + (i * (sCatW + 0.02f));
+
+                elements.Add(new CuiButton
+                {
+                    Button = { Color = isSel ? ColorActiveBlue : ColorNavBtn, Command = $"goatui.skinbox.modal.setcat {cKey}" },
+                    RectTransform = { AnchorMin = $"{xMin} 0.79", AnchorMax = $"{xMin + sCatW} 0.84" },
+                    Text = { Text = cKey, FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                }, "SkinboxModalBox");
+            }
+
+            // Quick Item Presets
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"2. TARGET ITEM / WEAPON:  [ <color=#00A8FF>{draft.Shortname.ToUpper()}</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.05 0.72", AnchorMax = "0.95 0.765" }
+            }, "SkinboxModalBox");
+
+            var quickItems = new List<(string shortname, string label)>
+            {
+                ("rifle.ak", "AK-47"),
+                ("smg.mp5", "MP5A4"),
+                ("rifle.bolt", "BOLT"),
+                ("rifle.l96", "L96"),
+                ("smg.2", "CUSTOM SMG"),
+                ("rifle.semiauto", "SAR"),
+                ("door.hinged.metal", "SHEET DOOR"),
+                ("metal.facemask", "FACEMASK")
+            };
+
+            float qW = 0.105f;
+            for (int i = 0; i < quickItems.Count; i++)
+            {
+                var qi = quickItems[i];
+                bool isQSel = qi.shortname.Equals(draft.Shortname, StringComparison.OrdinalIgnoreCase);
+                float xMin = 0.05f + (i * (qW + 0.008f));
+
+                elements.Add(new CuiButton
+                {
+                    Button = { Color = isQSel ? ColorSuccess : ColorNavBtn, Command = $"goatui.skinbox.modal.setitem {qi.shortname}" },
+                    RectTransform = { AnchorMin = $"{xMin} 0.665", AnchorMax = $"{xMin + qW} 0.715" },
+                    Text = { Text = qi.label, FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                }, "SkinboxModalBox");
+            }
+
+            // Copy from Hands Button
+            elements.Add(new CuiButton
+            {
+                Button = { Color = ColorActiveBlue, Command = "goatui.skinbox.modal.grabitem" },
+                RectTransform = { AnchorMin = "0.05 0.585", AnchorMax = "0.95 0.645" },
+                Text = { Text = $"🎒 CLICK TO CLONE HELD ITEM & SKIN ID FROM YOUR HANDS", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+            }, "SkinboxModalBox");
+
+            // 3. Skin ID input (Workshop ID)
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"3. SKIN ID (STEAM WORKSHOP ID):  [ <color=#2ECC71>{draft.SkinIdInput}</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.05 0.52", AnchorMax = "0.48 0.565" }
+            }, "SkinboxModalBox");
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorInputBg },
+                RectTransform = { AnchorMin = "0.05 0.46", AnchorMax = "0.48 0.51" }
+            }, "SkinboxModalBox", "SkinIdBox");
+
+            elements.Add(new CuiElement
+            {
+                Parent = "SkinIdBox",
+                Components =
+                {
+                    new CuiInputFieldComponent { Text = draft.SkinIdInput, FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Command = "goatui.skinbox.modal.setskinid " },
+                    new CuiRectTransformComponent { AnchorMin = "0.04 0", AnchorMax = "0.96 1" }
+                }
+            });
+
+            // 4. Skin Display Title
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"4. SKIN TITLE:  [ <color=#2ECC71>{draft.Title}</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.52 0.52", AnchorMax = "0.95 0.565" }
+            }, "SkinboxModalBox");
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorInputBg },
+                RectTransform = { AnchorMin = "0.52 0.46", AnchorMax = "0.95 0.51" }
+            }, "SkinboxModalBox", "TitleBox");
+
+            elements.Add(new CuiElement
+            {
+                Parent = "TitleBox",
+                Components =
+                {
+                    new CuiInputFieldComponent { Text = draft.Title, FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Command = "goatui.skinbox.modal.settitle " },
+                    new CuiRectTransformComponent { AnchorMin = "0.04 0", AnchorMax = "0.96 1" }
+                }
+            });
+
+            // 5. Price in GEMS
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"5. PRICE IN GEMS:  [ <color=#F1C40F>◆ {draft.PriceInput} GEMS</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorGoldYellow, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.05 0.385", AnchorMax = "0.48 0.43" }
+            }, "SkinboxModalBox");
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorInputBg },
+                RectTransform = { AnchorMin = "0.05 0.325", AnchorMax = "0.48 0.375" }
+            }, "SkinboxModalBox", "SkinPriceBox");
+
+            elements.Add(new CuiElement
+            {
+                Parent = "SkinPriceBox",
+                Components =
+                {
+                    new CuiInputFieldComponent { Text = draft.PriceInput, FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Command = "goatui.skinbox.modal.setprice " },
+                    new CuiRectTransformComponent { AnchorMin = "0.04 0", AnchorMax = "0.96 1" }
+                }
+            });
+
+            // Visual Preview Box
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0.12 0.13 0.15 0.95" },
+                RectTransform = { AnchorMin = "0.52 0.18", AnchorMax = "0.95 0.42" }
+            }, "SkinboxModalBox", "SkinPreviewPanel");
+
+            ulong parseSkin = 0;
+            ulong.TryParse(draft.SkinIdInput.Trim(), out parseSkin);
+
+            ItemDefinition prevDef = ItemManager.FindItemDefinition(draft.Shortname);
+            if (prevDef != null)
+            {
+                elements.Add(new CuiElement
+                {
+                    Parent = "SkinPreviewPanel",
+                    Components =
+                    {
+                        new CuiImageComponent { ItemId = prevDef.itemid, SkinId = parseSkin, Color = "1 1 1 1" },
+                        new CuiRectTransformComponent { AnchorMin = "0.5 0.55", AnchorMax = "0.5 0.55", OffsetMin = "-45 -35", OffsetMax = "45 45" }
+                    }
+                });
+            }
+
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = $"PREVIEW: {draft.Title.ToUpper()}\n<color=#8E9CA8>SkinID: {parseSkin}</color>", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.02 0.05", AnchorMax = "0.98 0.28" }
+            }, "SkinPreviewPanel");
+
+            // Buttons: Save / Cancel
+            elements.Add(new CuiButton
+            {
+                Button = { Color = ColorSuccess, Command = "goatui.skinbox.modal.save" },
+                RectTransform = { AnchorMin = "0.05 0.04", AnchorMax = "0.58 0.12" },
+                Text = { Text = "💾 SAVE SKIN TO SKINBOX", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+            }, "SkinboxModalBox");
+
+            elements.Add(new CuiButton
+            {
+                Button = { Color = ColorCloseRed, Command = "goatui.skinbox.modal.cancel" },
+                RectTransform = { AnchorMin = "0.62 0.04", AnchorMax = "0.95 0.12" },
+                Text = { Text = "✕ CANCEL", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+            }, "SkinboxModalBox");
+
+            CuiHelper.AddUi(player, elements);
+        }
+
         private void OpenTabManagerModal(BasePlayer player)
         {
             if (!HasRank(player)) return;
@@ -3368,6 +3969,13 @@ namespace Oxide.Plugins
         {
             var p = arg.Player();
             if (p != null) OpenShopUI(p);
+        }
+
+        [ConsoleCommand("goatui.nav.skinbox")]
+        private void CmdNavSkinbox(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p != null) OpenSkinboxUI(p);
         }
 
         [ConsoleCommand("goatui.nav.stats")]
@@ -3593,6 +4201,275 @@ namespace Oxide.Plugins
                 shopDrafts.Remove(p.userID);
                 CuiHelper.DestroyUi(p, LayerModal);
                 OpenShopUI(p);
+            }
+        }
+
+        [ConsoleCommand("goatui.skinbox.tab")]
+        private void CmdSkinboxTab(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null) return;
+            string category = arg.GetString(0, "ALL");
+            activeSkinboxCategory[p.userID] = category;
+            OpenSkinboxUI(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.buy")]
+        private void CmdSkinboxBuy(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null) return;
+
+            string skinIdStr = arg.GetString(0, "");
+            if (string.IsNullOrEmpty(skinIdStr)) return;
+
+            var skin = skinboxData?.Skins?.FirstOrDefault(s => s.Id.Equals(skinIdStr, StringComparison.OrdinalIgnoreCase));
+            if (skin == null) return;
+
+            var acc = GetOrCreateAccount(p.UserIDString, p.displayName);
+            if (acc.PurchasedSkins == null) acc.PurchasedSkins = new List<ulong>();
+            if (acc.ActiveCraftSkins == null) acc.ActiveCraftSkins = new Dictionary<string, ulong>();
+
+            if (acc.PurchasedSkins.Contains(skin.SkinId))
+            {
+                SendReply(p, $"<color=#00A8FF>[SKINBOX]</color> You already own <color=#F1C40F>{skin.Title}</color> permanently!");
+                return;
+            }
+
+            if (acc.Gems < skin.Price)
+            {
+                SendReply(p, $"<color=#E74C3C>[SKINBOX]</color> You need <color=#F1C40F>◆ {skin.Price} GEMS</color>! Your balance: <color=#F1C40F>◆ {acc.Gems} GEMS</color>.");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.denied.prefab", p.transform.position);
+                return;
+            }
+
+            acc.Gems -= skin.Price;
+            acc.PurchasedSkins.Add(skin.SkinId);
+            acc.ActiveCraftSkins[skin.Shortname] = skin.SkinId;
+            SavePlayerData();
+
+            // Auto-skin held weapon if matching
+            var held = p.GetActiveItem();
+            if (held != null && held.info != null && held.info.shortname == skin.Shortname)
+            {
+                held.skin = skin.SkinId;
+                held.MarkDirty();
+                var heldEntity = held.GetHeldEntity();
+                if (heldEntity != null)
+                {
+                    heldEntity.skinID = skin.SkinId;
+                    heldEntity.SendNetworkUpdate();
+                }
+            }
+
+            Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", p.transform.position);
+            SendReply(p, $"<color=#2ECC71>[SKINBOX]</color> 🎉 Successfully unlocked <color=#F1C40F>{skin.Title}</color> permanently! Any <color=#00A8FF>{skin.Shortname.ToUpper()}</color> you craft will now automatically use this skin.");
+            OpenSkinboxUI(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.equip")]
+        private void CmdSkinboxEquip(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null) return;
+
+            string skinIdStr = arg.GetString(0, "");
+            if (string.IsNullOrEmpty(skinIdStr)) return;
+
+            var skin = skinboxData?.Skins?.FirstOrDefault(s => s.Id.Equals(skinIdStr, StringComparison.OrdinalIgnoreCase));
+            if (skin == null) return;
+
+            var acc = GetOrCreateAccount(p.UserIDString, p.displayName);
+            if (acc.PurchasedSkins == null || !acc.PurchasedSkins.Contains(skin.SkinId))
+            {
+                SendReply(p, "<color=#E74C3C>[SKINBOX]</color> You do not own this skin yet.");
+                return;
+            }
+
+            if (acc.ActiveCraftSkins == null) acc.ActiveCraftSkins = new Dictionary<string, ulong>();
+            acc.ActiveCraftSkins[skin.Shortname] = skin.SkinId;
+            SavePlayerData();
+
+            // Auto-skin held item if matching
+            var held = p.GetActiveItem();
+            if (held != null && held.info != null && held.info.shortname == skin.Shortname)
+            {
+                held.skin = skin.SkinId;
+                held.MarkDirty();
+                var heldEntity = held.GetHeldEntity();
+                if (heldEntity != null)
+                {
+                    heldEntity.skinID = skin.SkinId;
+                    heldEntity.SendNetworkUpdate();
+                }
+            }
+
+            SendReply(p, $"<color=#2ECC71>[SKINBOX]</color> Active craft skin set to <color=#F1C40F>{skin.Title}</color> for <color=#00A8FF>{skin.Shortname.ToUpper()}</color>!");
+            OpenSkinboxUI(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.delskin")]
+        private void CmdSkinboxDelSkin(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p)) return;
+
+            string skinIdStr = arg.GetString(0, "");
+            if (string.IsNullOrEmpty(skinIdStr) || skinboxData?.Skins == null) return;
+
+            var found = skinboxData.Skins.FirstOrDefault(s => s.Id.Equals(skinIdStr, StringComparison.OrdinalIgnoreCase));
+            if (found != null)
+            {
+                skinboxData.Skins.Remove(found);
+                SaveSkinboxData();
+                SendReply(p, $"<color=#E74C3C>✓ Deleted skin [{found.Title}] from Skinbox!</color>");
+            }
+            OpenSkinboxUI(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.openaddmodal")]
+        private void CmdSkinboxOpenAddModal(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p)) return;
+
+            var held = p.GetActiveItem();
+            string sName = (held != null && held.info != null) ? held.info.shortname : "rifle.ak";
+            ulong sSkin = (held != null) ? held.skin : 0;
+
+            skinDrafts[p.userID] = new DraftSkinboxItem
+            {
+                Category = "WEAPONS",
+                Shortname = sName,
+                SkinIdInput = sSkin.ToString(),
+                Title = (held != null && held.info != null) ? $"{held.info.displayName.english.ToUpper()} SKIN" : "CUSTOM AK-47",
+                PriceInput = "100"
+            };
+
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.setcat")]
+        private void CmdSkinboxModalSetCat(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !skinDrafts.ContainsKey(p.userID)) return;
+            string cat = arg.GetString(0, "WEAPONS").ToUpper();
+            skinDrafts[p.userID].Category = cat;
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.setitem")]
+        private void CmdSkinboxModalSetItem(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !skinDrafts.ContainsKey(p.userID)) return;
+            string sName = arg.GetString(0, "rifle.ak");
+            skinDrafts[p.userID].Shortname = sName;
+            var def = ItemManager.FindItemDefinition(sName);
+            if (def != null)
+                skinDrafts[p.userID].Title = $"{def.displayName.english.ToUpper()} SKIN";
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.setskinid")]
+        private void CmdSkinboxModalSetSkinId(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !skinDrafts.ContainsKey(p.userID)) return;
+            string text = arg.FullString.ToString().Trim();
+            if (!string.IsNullOrEmpty(text))
+            {
+                skinDrafts[p.userID].SkinIdInput = text;
+            }
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.settitle")]
+        private void CmdSkinboxModalSetTitle(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !skinDrafts.ContainsKey(p.userID)) return;
+            string text = arg.FullString.ToString().Trim();
+            if (!string.IsNullOrEmpty(text))
+            {
+                skinDrafts[p.userID].Title = text;
+            }
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.setprice")]
+        private void CmdSkinboxModalSetPrice(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !skinDrafts.ContainsKey(p.userID)) return;
+            string text = arg.FullString.ToString().Trim();
+            if (!string.IsNullOrEmpty(text))
+            {
+                skinDrafts[p.userID].PriceInput = text;
+            }
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.grabitem")]
+        private void CmdSkinboxModalGrabItem(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p)) return;
+
+            var held = p.GetActiveItem() ?? p.inventory.containerBelt?.itemList?.FirstOrDefault() ?? p.inventory.containerMain?.itemList?.FirstOrDefault();
+            if (held != null && held.info != null)
+            {
+                skinDrafts[p.userID].Shortname = held.info.shortname;
+                skinDrafts[p.userID].SkinIdInput = held.skin.ToString();
+                skinDrafts[p.userID].Title = $"{held.info.displayName.english.ToUpper()} SKIN";
+                SendReply(p, $"<color=#2ECC71>✓ Cloned ({held.info.displayName.english}) with Skin ID ({held.skin}) from your hands!</color>");
+            }
+            OpenSkinboxCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.save")]
+        private void CmdSkinboxModalSave(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !skinDrafts.ContainsKey(p.userID)) return;
+
+            var draft = skinDrafts[p.userID];
+            ulong finalSkinId = 0;
+            ulong.TryParse(draft.SkinIdInput.Trim(), out finalSkinId);
+            int finalPrice = ParseIntSafe(draft.PriceInput, 50);
+
+            if (skinboxData.Skins == null) skinboxData.Skins = new List<SkinboxItem>();
+
+            string newId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            skinboxData.Skins.Add(new SkinboxItem
+            {
+                Id = newId,
+                Shortname = draft.Shortname,
+                Title = !string.IsNullOrEmpty(draft.Title) ? draft.Title.ToUpper() : $"{draft.Shortname.ToUpper()} SKIN",
+                SkinId = finalSkinId,
+                Price = finalPrice,
+                Category = draft.Category
+            });
+
+            SaveSkinboxData();
+            activeSkinboxCategory[p.userID] = draft.Category;
+            skinDrafts.Remove(p.userID);
+
+            CuiHelper.DestroyUi(p, LayerModal);
+            SendReply(p, $"<color=#2ECC71>✓ Successfully added {draft.Title} (Skin ID: {finalSkinId}) for {finalPrice} GEMS to Skinbox!</color>");
+            OpenSkinboxUI(p);
+        }
+
+        [ConsoleCommand("goatui.skinbox.modal.cancel")]
+        private void CmdSkinboxModalCancel(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p != null)
+            {
+                skinDrafts.Remove(p.userID);
+                CuiHelper.DestroyUi(p, LayerModal);
+                OpenSkinboxUI(p);
             }
         }
 
