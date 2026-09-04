@@ -18,6 +18,22 @@ namespace Oxide.Plugins
         private string ApiSecret = "goat-stats-sync-secret";
         private int BatchSyncIntervalSeconds = 30;
 
+        protected override void LoadDefaultConfig()
+        {
+            Config["ApiEndpoint"] = ApiEndpoint;
+            Config["ApiSecret"] = ApiSecret;
+            Config["BatchSyncIntervalSeconds"] = BatchSyncIntervalSeconds;
+            SaveConfig();
+        }
+
+        private void Init()
+        {
+            ApiEndpoint = Config.Get<string>("ApiEndpoint") ?? ApiEndpoint;
+            ApiSecret = Config.Get<string>("ApiSecret") ?? ApiSecret;
+            BatchSyncIntervalSeconds = Config.Get<int>("BatchSyncIntervalSeconds");
+            if (BatchSyncIntervalSeconds <= 5) BatchSyncIntervalSeconds = 30;
+        }
+
         // In-memory buffer to aggregate stats before sending to API
         private Dictionary<ulong, PlayerBuffer> statBuffer = new Dictionary<ulong, PlayerBuffer>();
         private Timer syncTimer;
@@ -29,6 +45,9 @@ namespace Oxide.Plugins
             public int Deaths;
             public int Headshots;
             public int ExplosivesUsed;
+            public int RocketsFired;
+            public int C4Used;
+            public int SatchelsUsed;
             public int WoodGathered;
             public int StoneGathered;
             public int MetalGathered;
@@ -125,9 +144,18 @@ namespace Oxide.Plugins
         {
             if (player == null || player.IsNpc || item == null) return;
             var buf = GetBuffer(player);
-            if (buf != null)
+            if (buf == null) return;
+
+            string itemShort = item.GetItem()?.info?.shortname ?? "";
+            buf.ExplosivesUsed++;
+
+            if (itemShort == "explosive.timed")
             {
-                buf.ExplosivesUsed++;
+                buf.C4Used++;
+            }
+            else if (itemShort == "explosive.satchel")
+            {
+                buf.SatchelsUsed++;
             }
         }
 
@@ -139,6 +167,7 @@ namespace Oxide.Plugins
             if (buf != null)
             {
                 buf.ExplosivesUsed++;
+                buf.RocketsFired++;
             }
         }
 
@@ -159,8 +188,8 @@ namespace Oxide.Plugins
 
                 // Only send if there is at least one stat to increment
                 if (b.Kills == 0 && b.Deaths == 0 && b.Headshots == 0 &&
-                    b.ExplosivesUsed == 0 && b.WoodGathered == 0 &&
-                    b.StoneGathered == 0 && b.MetalGathered == 0 && b.SulfurGathered == 0)
+                    b.ExplosivesUsed == 0 && b.RocketsFired == 0 && b.C4Used == 0 && b.SatchelsUsed == 0 &&
+                    b.WoodGathered == 0 && b.StoneGathered == 0 && b.MetalGathered == 0 && b.SulfurGathered == 0)
                 {
                     continue;
                 }
@@ -177,6 +206,9 @@ namespace Oxide.Plugins
                             { "deaths", b.Deaths },
                             { "headshots", b.Headshots },
                             { "explosives_used", b.ExplosivesUsed },
+                            { "rockets_fired", b.RocketsFired },
+                            { "c4_used", b.C4Used },
+                            { "satchels_used", b.SatchelsUsed },
                             { "wood_gathered", b.WoodGathered },
                             { "stone_gathered", b.StoneGathered },
                             { "metal_gathered", b.MetalGathered },
