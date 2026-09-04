@@ -84,6 +84,7 @@ namespace Oxide.Plugins
 
         private HashSet<ulong> openUiPlayers = new HashSet<ulong>();
         private Dictionary<ulong, string> activeMenu = new Dictionary<ulong, string>();
+        private Dictionary<ulong, string> currentLoadedMenu = new Dictionary<ulong, string>();
         private Dictionary<ulong, string> activePlayerTabs = new Dictionary<ulong, string>();
         private Dictionary<ulong, string> activeStatsTabs = new Dictionary<ulong, string>();
         private Dictionary<ulong, string> activeShopCategory = new Dictionary<ulong, string>();
@@ -870,6 +871,7 @@ namespace Oxide.Plugins
         {
             if (player == null) return;
             openUiPlayers.Remove(player.userID);
+            currentLoadedMenu.Remove(player.userID);
             CuiHelper.DestroyUi(player, LayerMain);
             CuiHelper.DestroyUi(player, LayerContent);
             CuiHelper.DestroyUi(player, LayerTopBar);
@@ -1556,6 +1558,7 @@ namespace Oxide.Plugins
         void OnPlayerDeath(BasePlayer victim, HitInfo info)
         {
             if (victim == null || !victim.userID.IsSteamId() || victim.IsNpc) return;
+            if (openUiPlayers.Contains(victim.userID)) CloseAllGoatUI(victim);
 
             var victimStat = GetOrCreateStat(victim.UserIDString, victim.displayName);
             victimStat.Deaths++;
@@ -1644,6 +1647,12 @@ namespace Oxide.Plugins
                         RevokeTier(player.UserIDString, t, acc);
                 }
             }
+        }
+
+        void OnPlayerDisconnected(BasePlayer player, string reason)
+        {
+            if (player != null)
+                CloseAllGoatUI(player);
         }
 
         void OnItemCraftFinished(ItemCraftTask task, Item item, ItemCrafter itemCrafter)
@@ -2090,18 +2099,29 @@ namespace Oxide.Plugins
 
         private void OpenMainUI(BasePlayer player)
         {
+            bool isAlreadyInKits = currentLoadedMenu.TryGetValue(player.userID, out string lastMenu) && lastMenu == "KITS";
+            currentLoadedMenu[player.userID] = "KITS";
             activeMenu[player.userID] = "KITS";
             EnsureBaseShell(player, "KITS");
-            ClearContentOnly(player);
 
             var elements = new CuiElementContainer();
 
-            // Right-Side Content Wrapper
-            elements.Add(new CuiPanel
+            if (!isAlreadyInKits)
             {
-                Image = { Color = "0 0 0 0" },
-                RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
-            }, LayerMain, LayerContent);
+                ClearContentOnly(player);
+
+                // Right-Side Content Wrapper
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0 0 0 0" },
+                    RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
+                }, LayerMain, LayerContent);
+            }
+            else
+            {
+                CuiHelper.DestroyUi(player, LayerTopBar);
+                CuiHelper.DestroyUi(player, LayerCards);
+            }
 
             // TopBar Header
             elements.Add(new CuiPanel
@@ -2483,52 +2503,63 @@ namespace Oxide.Plugins
 
         private void OpenShopUI(BasePlayer player)
         {
+            bool isAlreadyInShop = currentLoadedMenu.TryGetValue(player.userID, out string lastMenu) && lastMenu == "SHOP";
+            currentLoadedMenu[player.userID] = "SHOP";
             activeMenu[player.userID] = "SHOP";
             EnsureBaseShell(player, "SHOP");
-            ClearContentOnly(player);
 
             var elements = new CuiElementContainer();
 
-            elements.Add(new CuiPanel
+            if (!isAlreadyInShop)
             {
-                Image = { Color = "0 0 0 0" },
-                RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
-            }, LayerMain, LayerContent);
+                ClearContentOnly(player);
 
-            elements.Add(new CuiPanel
-            {
-                Image = { Color = "0.095 0.105 0.12 0.985" },
-                RectTransform = { AnchorMin = "0.10 0.12", AnchorMax = "0.92 0.88" }
-            }, LayerContent, "ShopBox");
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0 0 0 0" },
+                    RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
+                }, LayerMain, LayerContent);
 
-            elements.Add(new CuiPanel
-            {
-                Image = { Color = "0.055 0.06 0.07 0.99" },
-                RectTransform = { AnchorMin = "0 0.908", AnchorMax = "1 1" }
-            }, "ShopBox", "ShopHeader");
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0.095 0.105 0.12 0.985" },
+                    RectTransform = { AnchorMin = "0.10 0.12", AnchorMax = "0.92 0.88" }
+                }, LayerContent, "ShopBox");
 
-            elements.Add(new CuiLabel
-            {
-                Text = { Text = $"{config.ServerName.ToUpper()} SHOP", FontSize = 14, Align = TextAnchor.MiddleLeft, Color = "0.92 0.93 0.95 1.0", Font = "robotocondensed-bold.ttf" },
-                RectTransform = { AnchorMin = "0.035 0", AnchorMax = "0.5 1" }
-            }, "ShopHeader");
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0.055 0.06 0.07 0.99" },
+                    RectTransform = { AnchorMin = "0 0.908", AnchorMax = "1 1" }
+                }, "ShopBox", "ShopHeader");
 
-            if (HasRank(player))
-            {
+                elements.Add(new CuiLabel
+                {
+                    Text = { Text = $"{config.ServerName.ToUpper()} SHOP", FontSize = 14, Align = TextAnchor.MiddleLeft, Color = "0.92 0.93 0.95 1.0", Font = "robotocondensed-bold.ttf" },
+                    RectTransform = { AnchorMin = "0.035 0", AnchorMax = "0.5 1" }
+                }, "ShopHeader");
+
+                if (HasRank(player))
+                {
+                    elements.Add(new CuiButton
+                    {
+                        Button = { Color = "0.10 0.30 0.55 0.90", Command = "goatui.shop.openaddmodal" },
+                        RectTransform = { AnchorMin = "0.80 0.12", AnchorMax = "0.93 0.88" },
+                        Text = { Text = "+ ADD ITEM", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                    }, "ShopHeader");
+                }
+
                 elements.Add(new CuiButton
                 {
-                    Button = { Color = "0.10 0.30 0.55 0.90", Command = "goatui.shop.openaddmodal" },
-                    RectTransform = { AnchorMin = "0.80 0.12", AnchorMax = "0.93 0.88" },
-                    Text = { Text = "+ ADD ITEM", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
-                }, "ShopHeader");
+                    Button = { Color = "0 0 0 0", Command = "goatui.close" },
+                    RectTransform = { AnchorMin = "0.925 0.935", AnchorMax = "0.99 0.98" },
+                    Text = { Text = "CLOSE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.94 0.30 0.30 1.00", Font = "robotocondensed-bold.ttf" }
+                }, LayerContent);
             }
-
-            elements.Add(new CuiButton
+            else
             {
-                Button = { Color = "0 0 0 0", Command = "goatui.close" },
-                RectTransform = { AnchorMin = "0.925 0.935", AnchorMax = "0.99 0.98" },
-                Text = { Text = "CLOSE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.94 0.30 0.30 1.00", Font = "robotocondensed-bold.ttf" }
-            }, LayerContent);
+                CuiHelper.DestroyUi(player, "ShopNavPanel");
+                CuiHelper.DestroyUi(player, "ShopGridArea");
+            }
 
             if (!activeShopCategory.ContainsKey(player.userID) || string.IsNullOrEmpty(activeShopCategory[player.userID]) || !shopData.Categories.ContainsKey(activeShopCategory[player.userID]))
                 activeShopCategory[player.userID] = "GEMS";
@@ -2732,52 +2763,65 @@ namespace Oxide.Plugins
 
         private void OpenSkinboxUI(BasePlayer player)
         {
+            bool isAlreadyInSkinbox = currentLoadedMenu.TryGetValue(player.userID, out string lastMenu) && lastMenu == "SKINBOX";
+            currentLoadedMenu[player.userID] = "SKINBOX";
             activeMenu[player.userID] = "SKINBOX";
             EnsureBaseShell(player, "SKINBOX");
-            ClearContentOnly(player);
 
             var elements = new CuiElementContainer();
 
-            elements.Add(new CuiPanel
+            if (!isAlreadyInSkinbox)
             {
-                Image = { Color = "0 0 0 0" },
-                RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
-            }, LayerMain, LayerContent);
+                ClearContentOnly(player);
 
-            elements.Add(new CuiPanel
-            {
-                Image = { Color = "0.095 0.105 0.12 0.985" },
-                RectTransform = { AnchorMin = "0.08 0.10", AnchorMax = "0.94 0.90" }
-            }, LayerContent, "SkinboxBox");
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0 0 0 0" },
+                    RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
+                }, LayerMain, LayerContent);
 
-            elements.Add(new CuiPanel
-            {
-                Image = { Color = "0.055 0.06 0.07 0.99" },
-                RectTransform = { AnchorMin = "0 0.908", AnchorMax = "1 1" }
-            }, "SkinboxBox", "SkinboxHeader");
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0.095 0.105 0.12 0.985" },
+                    RectTransform = { AnchorMin = "0.08 0.10", AnchorMax = "0.94 0.90" }
+                }, LayerContent, "SkinboxBox");
 
-            elements.Add(new CuiLabel
-            {
-                Text = { Text = $"{config.ServerName.ToUpper()} SKINBOX", FontSize = 14, Align = TextAnchor.MiddleLeft, Color = "0.92 0.93 0.95 1.0", Font = "robotocondensed-bold.ttf" },
-                RectTransform = { AnchorMin = "0.035 0", AnchorMax = "0.5 1" }
-            }, "SkinboxHeader");
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0.055 0.06 0.07 0.99" },
+                    RectTransform = { AnchorMin = "0 0.908", AnchorMax = "1 1" }
+                }, "SkinboxBox", "SkinboxHeader");
 
-            if (HasRank(player))
-            {
+                elements.Add(new CuiLabel
+                {
+                    Text = { Text = $"{config.ServerName.ToUpper()} SKINBOX", FontSize = 14, Align = TextAnchor.MiddleLeft, Color = "0.92 0.93 0.95 1.0", Font = "robotocondensed-bold.ttf" },
+                    RectTransform = { AnchorMin = "0.035 0", AnchorMax = "0.5 1" }
+                }, "SkinboxHeader");
+
+                if (HasRank(player))
+                {
+                    elements.Add(new CuiButton
+                    {
+                        Button = { Color = "0.10 0.30 0.55 0.90", Command = "goatui.skinbox.openaddmodal" },
+                        RectTransform = { AnchorMin = "0.78 0.12", AnchorMax = "0.92 0.88" },
+                        Text = { Text = "+ ADD SKIN", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                    }, "SkinboxHeader");
+                }
+
                 elements.Add(new CuiButton
                 {
-                    Button = { Color = "0.10 0.30 0.55 0.90", Command = "goatui.skinbox.openaddmodal" },
-                    RectTransform = { AnchorMin = "0.78 0.12", AnchorMax = "0.92 0.88" },
-                    Text = { Text = "+ ADD SKIN", FontSize = 10, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
-                }, "SkinboxHeader");
+                    Button = { Color = "0 0 0 0", Command = "goatui.close" },
+                    RectTransform = { AnchorMin = "0.925 0.935", AnchorMax = "0.99 0.98" },
+                    Text = { Text = "CLOSE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.94 0.30 0.30 1.00", Font = "robotocondensed-bold.ttf" }
+                }, LayerContent);
             }
-
-            elements.Add(new CuiButton
+            else
             {
-                Button = { Color = "0 0 0 0", Command = "goatui.close" },
-                RectTransform = { AnchorMin = "0.925 0.935", AnchorMax = "0.99 0.98" },
-                Text = { Text = "CLOSE", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.94 0.30 0.30 1.00", Font = "robotocondensed-bold.ttf" }
-            }, LayerContent);
+                CuiHelper.DestroyUi(player, "SkinboxNavPanel");
+                CuiHelper.DestroyUi(player, "SkinboxSubFilterBar");
+                CuiHelper.DestroyUi(player, "SkinboxGridArea");
+                CuiHelper.DestroyUi(player, "SkinboxPageBar");
+            }
 
             if (!activeSkinboxCategory.ContainsKey(player.userID) || string.IsNullOrEmpty(activeSkinboxCategory[player.userID]))
                 activeSkinboxCategory[player.userID] = "ALL";
@@ -3153,58 +3197,81 @@ namespace Oxide.Plugins
 
         private void OpenStatisticsUI(BasePlayer player)
         {
+            bool isAlreadyInStats = currentLoadedMenu.TryGetValue(player.userID, out string lastMenu) && lastMenu == "STATISTICS";
+            currentLoadedMenu[player.userID] = "STATISTICS";
             activeMenu[player.userID] = "STATISTICS";
             EnsureBaseShell(player, "STATISTICS");
-            ClearContentOnly(player);
 
             var elements = new CuiElementContainer();
 
-            elements.Add(new CuiPanel
+            if (!isAlreadyInStats)
             {
-                Image = { Color = "0 0 0 0" },
-                RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
-            }, LayerMain, LayerContent);
+                ClearContentOnly(player);
+
+                elements.Add(new CuiPanel
+                {
+                    Image = { Color = "0 0 0 0" },
+                    RectTransform = { AnchorMin = "0.170 0.02", AnchorMax = "0.990 0.98" }
+                }, LayerMain, LayerContent);
+
+                elements.Add(new CuiLabel
+                {
+                    Text = { Text = $"<size=18><b>{config.ServerName}</b></size>\n<size=10><color=#8E9CA8>LEADERBOARD</color></size>", Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf" },
+                    RectTransform = { AnchorMin = "0.02 0.91", AnchorMax = "0.40 0.98" }
+                }, LayerContent);
+
+                elements.Add(new CuiButton
+                {
+                    Button = { Color = ColorCloseRed, Command = "goatui.close" },
+                    RectTransform = { AnchorMin = "0.90 0.925", AnchorMax = "0.99 0.980" },
+                    Text = { Text = "CLOSE", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                }, LayerContent);
+            }
+            else
+            {
+                CuiHelper.DestroyUi(player, "StatsNavButtons");
+                CuiHelper.DestroyUi(player, "StatsHeaderRow");
+                CuiHelper.DestroyUi(player, "StatsBodyPanel");
+            }
 
             if (!activeStatsTabs.ContainsKey(player.userID) || string.IsNullOrEmpty(activeStatsTabs[player.userID]))
                 activeStatsTabs[player.userID] = "PLAYERS";
 
             string currentTab = activeStatsTabs[player.userID];
-
-            elements.Add(new CuiLabel
-            {
-                Text = { Text = $"<size=18><b>{config.ServerName}</b></size>\n<size=10><color=#8E9CA8>LEADERBOARD</color></size>", Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf" },
-                RectTransform = { AnchorMin = "0.02 0.91", AnchorMax = "0.40 0.98" }
-            }, LayerContent);
-
             bool isPlayers = currentTab.Equals("PLAYERS", StringComparison.OrdinalIgnoreCase);
             bool isClans = currentTab.Equals("CLANS", StringComparison.OrdinalIgnoreCase);
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0" },
+                RectTransform = { AnchorMin = "0.68 0.925", AnchorMax = "0.89 0.980" }
+            }, LayerContent, "StatsNavButtons");
 
             elements.Add(new CuiButton
             {
                 Button = { Color = isPlayers ? ColorActiveBlue : ColorNavBtn, Command = "goatui.stats.tab PLAYERS" },
-                RectTransform = { AnchorMin = "0.68 0.925", AnchorMax = "0.78 0.980" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "0.48 1" },
                 Text = { Text = "PLAYERS", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
-            }, LayerContent);
+            }, "StatsNavButtons");
 
             elements.Add(new CuiButton
             {
                 Button = { Color = isClans ? ColorActiveBlue : ColorNavBtn, Command = "goatui.stats.tab CLANS" },
-                RectTransform = { AnchorMin = "0.79 0.925", AnchorMax = "0.89 0.980" },
+                RectTransform = { AnchorMin = "0.52 0", AnchorMax = "1 1" },
                 Text = { Text = "CLANS", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
-            }, LayerContent);
-
-            elements.Add(new CuiButton
-            {
-                Button = { Color = ColorCloseRed, Command = "goatui.close" },
-                RectTransform = { AnchorMin = "0.90 0.925", AnchorMax = "0.99 0.980" },
-                Text = { Text = "CLOSE", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
-            }, LayerContent);
+            }, "StatsNavButtons");
 
             elements.Add(new CuiPanel
             {
                 Image = { Color = "0 0 0 0" },
                 RectTransform = { AnchorMin = "0.02 0.855", AnchorMax = "0.98 0.895" }
             }, LayerContent, "StatsHeaderRow");
+
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = "0 0 0 0" },
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+            }, LayerContent, "StatsBodyPanel");
 
             string nameColTitle = isClans ? "Clan" : "Player";
 
@@ -3306,7 +3373,7 @@ namespace Oxide.Plugins
                     {
                         Image = { Color = rowBg },
                         RectTransform = { AnchorMin = $"0.02 {yMin}", AnchorMax = $"0.98 {yMax}" }
-                    }, LayerContent, rowId);
+                    }, "StatsBodyPanel", rowId);
 
                     string kdColor = item.KD >= 2.0f ? "#F5A623" : (item.KD >= 1.0f ? "#2ECC71" : "#E74C3C");
 
@@ -3329,7 +3396,7 @@ namespace Oxide.Plugins
                 {
                     Image = { Color = ColorSlotBg },
                     RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.07" }
-                }, LayerContent, "SelfRow");
+                }, "StatsBodyPanel", "SelfRow");
 
                 elements.Add(new CuiLabel { Text = { Text = $"<b>{myRank}</b>", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorActiveBlue, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = "0.01 0", AnchorMax = "0.06 1" } }, "SelfRow");
                 elements.Add(new CuiLabel { Text = { Text = $"<b>{player.displayName} (YOU)</b>", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorActiveBlue, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = "0.08 0", AnchorMax = "0.45 1" } }, "SelfRow");
@@ -3379,7 +3446,7 @@ namespace Oxide.Plugins
                     {
                         Image = { Color = rowBg },
                         RectTransform = { AnchorMin = $"0.02 {yMin}", AnchorMax = $"0.98 {yMax}" }
-                    }, LayerContent, rowId);
+                    }, "StatsBodyPanel", rowId);
 
                     string kdColor = item.KD >= 2.0f ? "#F5A623" : (item.KD >= 1.0f ? "#2ECC71" : "#E74C3C");
 
@@ -3403,7 +3470,7 @@ namespace Oxide.Plugins
                 {
                     Image = { Color = ColorSlotBg },
                     RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.07" }
-                }, LayerContent, "SelfClanRow");
+                }, "StatsBodyPanel", "SelfClanRow");
 
                 elements.Add(new CuiLabel { Text = { Text = $"<b>{myClanRank}</b>", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorActiveBlue, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = "0.01 0", AnchorMax = "0.06 1" } }, "SelfClanRow");
                 elements.Add(new CuiLabel { Text = { Text = $"<b>{myClanStat.Tag} (YOUR CLAN)</b>", FontSize = 11, Align = TextAnchor.MiddleLeft, Color = ColorActiveBlue, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = "0.08 0", AnchorMax = "0.45 1" } }, "SelfClanRow");
