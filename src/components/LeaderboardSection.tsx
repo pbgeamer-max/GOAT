@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Bomb,
   RefreshCw,
   Search,
-  Swords,
-  Pickaxe,
   ExternalLink,
   ChevronDown,
 } from "lucide-react";
@@ -31,42 +28,9 @@ export interface LeaderboardEntry {
   voice_time_seconds?: number;
 }
 
-type TabMode = "pvp" | "boom" | "farm";
 
-interface ModeConfig {
-  id: TabMode;
-  title: string;
-  subtitle: string;
-  defaultSort: string;
-  icon: React.FC<{ className?: string }>;
-}
-
-const MODES: ModeConfig[] = [
-  {
-    id: "pvp",
-    title: "PvP Combat",
-    subtitle: "Kills, Deaths & K/D Ratio",
-    defaultSort: "kills",
-    icon: Swords,
-  },
-  {
-    id: "boom",
-    title: "Raids & Boom",
-    subtitle: "Rockets, C4 & Satchels",
-    defaultSort: "explosives_used",
-    icon: Bomb,
-  },
-  {
-    id: "farm",
-    title: "Farming & Nodes",
-    subtitle: "Sulfur, Metal, Stone & Wood",
-    defaultSort: "total_farmed",
-    icon: Pickaxe,
-  },
-];
 
 export const LeaderboardSection: React.FC = () => {
-  const [activeMode, setActiveMode] = useState<TabMode>("pvp");
   const [sortBy, setSortBy] = useState<string>("kills");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [players, setPlayers] = useState<LeaderboardEntry[]>([]);
@@ -110,15 +74,7 @@ export const LeaderboardSection: React.FC = () => {
     fetchLeaderboard(sortBy);
   }, [sortBy]);
 
-  // Handle Tab Switch
-  const handleModeChange = (mode: TabMode) => {
-    setActiveMode(mode);
-    const m = MODES.find((item) => item.id === mode);
-    if (m) {
-      setSortBy(m.defaultSort);
-      setSortOrder("desc");
-    }
-  };
+
 
   // Header column click sort
   const handleColumnSort = (colKey: string) => {
@@ -272,7 +228,6 @@ export const LeaderboardSection: React.FC = () => {
                 <option value="rockets_fired">Rockets Fired</option>
                 <option value="c4_used">C4 Explosives</option>
                 <option value="satchels_used">Satchel Charges</option>
-                <option value="voice_time_seconds">Voice Time</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -287,47 +242,7 @@ export const LeaderboardSection: React.FC = () => {
         </div>
       </div>
 
-      {/* ── 2. Four Mode Category Cards (Atlas layout) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {MODES.map((mode) => {
-          const Icon = mode.icon;
-          const isActive = activeMode === mode.id;
 
-          return (
-            <button
-              key={mode.id}
-              onClick={() => handleModeChange(mode.id)}
-              className={`text-left p-4 rounded-xl transition-all duration-200 border cursor-pointer group relative overflow-hidden ${
-                isActive
-                  ? "bg-gradient-to-b from-[#e62020]/20 via-[#18090b]/80 to-[#0a0d14] border-[#e62020] shadow-[0_0_25px_rgba(230,32,32,0.3)] ring-1 ring-[#e62020]/50"
-                  : "bg-[#090d16]/80 hover:bg-[#101524] border-white/10 hover:border-white/20"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span
-                  className={`font-display font-black text-base uppercase tracking-tight transition-colors ${
-                    isActive ? "text-white" : "text-zinc-300 group-hover:text-white"
-                  }`}
-                >
-                  {mode.title}
-                </span>
-                <Icon
-                  className={`w-4 h-4 transition-colors ${
-                    isActive ? "text-red-500" : "text-zinc-500 group-hover:text-zinc-300"
-                  }`}
-                />
-              </div>
-              <p
-                className={`text-xs transition-colors line-clamp-1 ${
-                  isActive ? "text-red-400/90 font-medium" : "text-zinc-500 group-hover:text-zinc-400"
-                }`}
-              >
-                {mode.subtitle}
-              </p>
-            </button>
-          );
-        })}
-      </div>
 
       {/* ── 3. Season / Countdown Timer Bar (Atlas style) ── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-[#080b12] border border-white/10 rounded-xl mb-4 text-xs font-mono">
