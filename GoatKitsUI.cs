@@ -2502,17 +2502,85 @@ namespace Oxide.Plugins
                 }
             });
 
+            // ── TIMING ROW: Cooldown │ Wipe Lock │ Max Uses ──────────────────────────────
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = "⏱ COOLDOWN (HRS)", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.05 0.468", AnchorMax = "0.36 0.500" }
+            }, "ModalBox");
+
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = "🔒 WIPE LOCK (HRS)", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.37 0.468", AnchorMax = "0.67 0.500" }
+            }, "ModalBox");
+
+            elements.Add(new CuiLabel
+            {
+                Text = { Text = "🎯 MAX USES / WIPE", FontSize = 9, Align = TextAnchor.MiddleLeft, Color = "#8E9CA8", Font = "robotocondensed-bold.ttf" },
+                RectTransform = { AnchorMin = "0.68 0.468", AnchorMax = "0.95 0.500" }
+            }, "ModalBox");
+
+            // Cooldown input
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorInputBg },
+                RectTransform = { AnchorMin = "0.05 0.425", AnchorMax = "0.35 0.462" }
+            }, "ModalBox", "InputCooldownPanel");
+            elements.Add(new CuiElement
+            {
+                Parent = "InputCooldownPanel",
+                Components =
+                {
+                    new CuiInputFieldComponent { Text = draft.CooldownInput == "0" ? "" : draft.CooldownInput, FontSize = 12, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, CharsLimit = 6, Command = "goatui.modal.setcooldown " },
+                    new CuiRectTransformComponent { AnchorMin = "0.02 0", AnchorMax = "0.98 1" }
+                }
+            });
+
+            // Wipe Lock input
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorInputBg },
+                RectTransform = { AnchorMin = "0.37 0.425", AnchorMax = "0.66 0.462" }
+            }, "ModalBox", "InputWipeLockPanel");
+            elements.Add(new CuiElement
+            {
+                Parent = "InputWipeLockPanel",
+                Components =
+                {
+                    new CuiInputFieldComponent { Text = draft.WipeLockHoursInput == "0" ? "" : draft.WipeLockHoursInput, FontSize = 12, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, CharsLimit = 6, Command = "goatui.modal.setwipelock " },
+                    new CuiRectTransformComponent { AnchorMin = "0.02 0", AnchorMax = "0.98 1" }
+                }
+            });
+
+            // Max Uses input
+            elements.Add(new CuiPanel
+            {
+                Image = { Color = ColorInputBg },
+                RectTransform = { AnchorMin = "0.68 0.425", AnchorMax = "0.95 0.462" }
+            }, "ModalBox", "InputMaxUsesPanel");
+            elements.Add(new CuiElement
+            {
+                Parent = "InputMaxUsesPanel",
+                Components =
+                {
+                    new CuiInputFieldComponent { Text = draft.MaxUsesInput == "0" ? "" : draft.MaxUsesInput, FontSize = 12, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, CharsLimit = 4, Command = "goatui.modal.setmaxuses " },
+                    new CuiRectTransformComponent { AnchorMin = "0.02 0", AnchorMax = "0.98 1" }
+                }
+            });
+            // ─────────────────────────────────────────────────────────────────────────────
+
             elements.Add(new CuiButton
             {
                 Button = { Color = ColorActiveBlue, Command = "goatui.modal.grabitems" },
-                RectTransform = { AnchorMin = "0.05 0.445", AnchorMax = "0.95 0.495" },
+                RectTransform = { AnchorMin = "0.05 0.375", AnchorMax = "0.95 0.418" },
                 Text = { Text = $"🎒 CLICK TO COPY ALL INVENTORY ITEMS (LOADED: {draft.Items.Count} ITEMS)", FontSize = 11, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
             }, "ModalBox");
 
             elements.Add(new CuiPanel
             {
                 Image = { Color = "0.035 0.045 0.06 0.95" },
-                RectTransform = { AnchorMin = "0.05 0.095", AnchorMax = "0.95 0.430" }
+                RectTransform = { AnchorMin = "0.05 0.095", AnchorMax = "0.95 0.360" }
             }, "ModalBox", "ItemsPreviewContainer");
 
             elements.Add(new CuiLabel
@@ -3267,6 +3335,39 @@ namespace Oxide.Plugins
             if (p == null || !HasRank(p) || !playerDrafts.ContainsKey(p.userID)) return;
             string text = arg.FullString.ToString().Trim();
             playerDrafts[p.userID].CustomUrl = text;
+            OpenCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.modal.setcooldown")]
+        private void CmdModalSetCooldown(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !playerDrafts.ContainsKey(p.userID)) return;
+            string text = arg.FullString.ToString().Trim();
+            if (!string.IsNullOrEmpty(text))
+                playerDrafts[p.userID].CooldownInput = text;
+            OpenCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.modal.setwipelock")]
+        private void CmdModalSetWipeLock(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !playerDrafts.ContainsKey(p.userID)) return;
+            string text = arg.FullString.ToString().Trim();
+            if (!string.IsNullOrEmpty(text))
+                playerDrafts[p.userID].WipeLockHoursInput = text;
+            OpenCreatorModal(p);
+        }
+
+        [ConsoleCommand("goatui.modal.setmaxuses")]
+        private void CmdModalSetMaxUses(ConsoleSystem.Arg arg)
+        {
+            var p = arg.Player();
+            if (p == null || !HasRank(p) || !playerDrafts.ContainsKey(p.userID)) return;
+            string text = arg.FullString.ToString().Trim();
+            if (!string.IsNullOrEmpty(text))
+                playerDrafts[p.userID].MaxUsesInput = text;
             OpenCreatorModal(p);
         }
 
