@@ -347,14 +347,20 @@ export const StoreSection: React.FC = () => {
   });
 
   return (
-    <section id="store" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#07090e] border-t border-white/10">
-      {/* Tactical Grid Background */}
-      <div className="absolute inset-0 bg-tactical-grid opacity-15 pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-red-600/5 rounded-full blur-[170px] pointer-events-none" />
+    <section
+      id="store"
+      className="relative py-20 px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-no-repeat border-t border-white/10 overflow-hidden"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(5, 8, 15, 0.84) 0%, rgba(7, 11, 20, 0.82) 40%, rgba(5, 8, 15, 0.95) 100%), url('/images/atlas_store_bg.png')`,
+        backgroundAttachment: "fixed",
+      }}
+    >
+      {/* Subtle Atmospheric Light */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-yellow-500/5 rounded-full blur-[170px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Real-time Server Sync Status Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-[#0c1017] border border-white/10 mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-[#0c1220]/80 border border-[#1e2a42] mb-8 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -365,7 +371,7 @@ export const StoreSection: React.FC = () => {
             </span>
             <span className="hidden sm:inline text-zinc-500 text-xs">•</span>
             <span className="hidden sm:inline text-zinc-400 text-xs">
-              Kits are fetched directly from the Rust server and update automatically when added or removed.
+              Kits are fetched directly from the Rust server and update automatically.
             </span>
           </div>
 
@@ -379,40 +385,63 @@ export const StoreSection: React.FC = () => {
               onClick={() => fetchLiveKits(true)}
               disabled={refreshing}
               title="Force sync with server"
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-all disabled:opacity-50"
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-all disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-emerald-400" : ""}`} />
             </button>
           </div>
         </div>
 
-        {/* Top Store Mode Switcher: 💎 BUY GEMS vs 👑 VIP RANKS & KITS */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-10">
+        {/* Header Title */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-mono text-xs font-bold uppercase tracking-widest mb-3">
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" /> OFFICIAL SERVER STORE
+          </div>
+          <h2 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white uppercase tracking-tight">
+            {storeMode === "gems" ? (
+              <>
+                BUY <span className="text-yellow-400">GEMS</span>
+              </>
+            ) : (
+              <>
+                VIP PACKAGES & <span className="text-[#e62020]">KITS</span>
+              </>
+            )}
+          </h2>
+          <p className="text-zinc-400 text-sm sm:text-base mt-2 max-w-2xl mx-auto">
+            {storeMode === "gems"
+              ? "Purchase in-game GEMS to unlock permanent custom weapon skins, armor, doors, and exclusive store items."
+              : "Enhance your gameplay with queue skip, VIP kits, skinbox access, and exclusive Discord perks."}
+          </p>
+        </div>
+
+        {/* Store Category Tabs: GEMS vs VIP RANKS & KITS */}
+        <div className="flex items-center justify-center gap-3 mb-10">
           <button
             onClick={() => setStoreMode("gems")}
-            className={`px-6 sm:px-8 py-3.5 rounded-2xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-3 transition-all duration-300 cursor-pointer ${
+            className={`px-6 sm:px-8 py-3 rounded-xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2.5 transition-all duration-200 cursor-pointer ${
               storeMode === "gems"
-                ? "bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-black shadow-[0_0_35px_rgba(234,179,8,0.6)] scale-105 border-2 border-yellow-200"
-                : "bg-[#0c1017] text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5 hover:border-yellow-500/30"
+                ? "bg-yellow-500 text-black shadow-[0_0_25px_rgba(234,179,8,0.5)] border border-yellow-300 scale-105"
+                : "bg-[#0c1220]/80 text-zinc-400 hover:text-white border border-[#1e2a42] hover:bg-[#151f33]"
             }`}
           >
-            <Sparkles className={`w-4 h-4 ${storeMode === "gems" ? "text-black animate-pulse" : "text-yellow-400"}`} />
-            <span>💎 BUY GEMS (ATLAS STORE)</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-black text-yellow-300 border border-yellow-400/40 uppercase">
-              HOT 🔥
+            <Sparkles className="w-4 h-4" />
+            <span>GEMS PACKAGES</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-black text-yellow-400 uppercase">
+              POPULAR
             </span>
           </button>
 
           <button
             onClick={() => setStoreMode("kits")}
-            className={`px-6 sm:px-8 py-3.5 rounded-2xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-3 transition-all duration-300 cursor-pointer ${
+            className={`px-6 sm:px-8 py-3 rounded-xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2.5 transition-all duration-200 cursor-pointer ${
               storeMode === "kits"
-                ? "bg-gradient-to-r from-red-600 via-rose-500 to-red-600 text-white shadow-[0_0_35px_rgba(230,32,32,0.6)] scale-105 border-2 border-red-300"
-                : "bg-[#0c1017] text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5 hover:border-red-500/30"
+                ? "bg-[#e62020] text-white shadow-[0_0_25px_rgba(230,32,32,0.5)] border border-red-400 scale-105"
+                : "bg-[#0c1220]/80 text-zinc-400 hover:text-white border border-[#1e2a42] hover:bg-[#151f33]"
             }`}
           >
-            <Crown className="w-4 h-4 text-yellow-400" />
-            <span>👑 VIP RANKS & KITS</span>
+            <Crown className="w-4 h-4" />
+            <span>VIP RANKS & KITS</span>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white/10 text-zinc-300">
               {kits.length}
             </span>
