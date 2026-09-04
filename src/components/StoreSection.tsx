@@ -604,37 +604,6 @@ export const StoreSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Detailed Breakdown List */}
-              <div className="bg-[#07090e] p-4 rounded-xl border border-white/5 mb-6">
-                <h4 className="font-mono text-xs uppercase text-zinc-400 mb-3 font-bold">
-                  Full item breakdown:
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                  {(inspectKit.Items || []).map((it, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-xs"
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <img
-                          src={getRustItemImageUrl(it.Shortname)}
-                          alt=""
-                          className="w-5 h-5 object-contain shrink-0"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = `https://rustlabs.com/img/items180/${it.Shortname.toLowerCase().trim()}.png`;
-                          }}
-                        />
-                        <span className="text-zinc-200 font-medium truncate">
-                          {it.DisplayName || it.Shortname}
-                        </span>
-                      </div>
-                      <span className="font-mono font-bold text-amber-400 shrink-0 ml-2">
-                        x{it.Amount.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3">
