@@ -113,9 +113,9 @@ export const Navbar: React.FC = () => {
               STORE
             </a>
 
-            {/* PLAYERS */}
+            {/* LEADERBOARD */}
             <a
-              href="#players"
+              href="#leaderboard"
               onClick={(e) => handleNavClick("players", e)}
               className={`px-3.5 py-1.5 text-xs font-display font-bold tracking-widest uppercase rounded transition-all cursor-pointer ${
                 activePage === "players"
@@ -123,7 +123,7 @@ export const Navbar: React.FC = () => {
                   : "text-zinc-300 hover:text-white hover:bg-white/5"
               }`}
             >
-              PLAYERS
+              LEADERBOARD
             </a>
 
             {/* VOICE REWARDS */}
@@ -311,11 +311,11 @@ export const Navbar: React.FC = () => {
               STORE
             </a>
             <a
-              href="#players"
+              href="#leaderboard"
               onClick={(e) => handleNavClick("players", e)}
               className={`py-2 px-3 rounded ${activePage === "players" ? "text-red-400 bg-white/5" : "text-zinc-300"}`}
             >
-              PLAYERS
+              LEADERBOARD
             </a>
             <a
               href="#voice"

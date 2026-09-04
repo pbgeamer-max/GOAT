@@ -81,6 +81,53 @@ export function parseConsoleEvent(rawMessage) {
   if (pluginMatch && !pvpMatch && !pveMatch && !envMatch) {
     const steamId = pluginMatch[1];
     incrementPlayerStats(steamId, { deaths: 1 });
+    return;
+  }
+
+  // Pattern 5: Rocket launches or explosive impacts:
+  const rocketMatch = msg.match(/(.+?)\[(\d{17})\].*?(?:rocket|ammo\.rocket)/i);
+  if (rocketMatch) {
+    const pName = rocketMatch[1].trim();
+    const pId = rocketMatch[2];
+    incrementPlayerStats(pId, { rockets_fired: 1 }, pName);
+    return;
+  }
+
+  // Pattern 6: Timed Explosive / C4:
+  const c4Match = msg.match(/(.+?)\[(\d{17})\].*?(?:explosive\.timed|\bc4\b)/i);
+  if (c4Match) {
+    const pName = c4Match[1].trim();
+    const pId = c4Match[2];
+    incrementPlayerStats(pId, { c4_used: 1 }, pName);
+    return;
+  }
+
+  // Pattern 7: Satchel Charges:
+  const satchelMatch = msg.match(/(.+?)\[(\d{17})\].*?(?:explosive\.satchel|satchel)/i);
+  if (satchelMatch) {
+    const pName = satchelMatch[1].trim();
+    const pId = satchelMatch[2];
+    incrementPlayerStats(pId, { satchels_used: 1 }, pName);
+    return;
+  }
+
+  // Pattern 8: Resource Gathering (Sulfur, Metal, Stone, Wood):
+  const gatherMatch = msg.match(/(.+?)\[(\d{17})\].*?(?:gathered|dispenser|mined|harvested)\s+(\d+)\s*(sulfur|metal|stone|wood)/i);
+  if (gatherMatch) {
+    const pName = gatherMatch[1].trim();
+    const pId = gatherMatch[2];
+    const amount = parseInt(gatherMatch[3], 10) || 0;
+    const resType = gatherMatch[4].toLowerCase();
+    if (resType.includes("sulfur")) {
+      incrementPlayerStats(pId, { sulfur_gathered: amount }, pName);
+    } else if (resType.includes("metal")) {
+      incrementPlayerStats(pId, { metal_gathered: amount }, pName);
+    } else if (resType.includes("stone")) {
+      incrementPlayerStats(pId, { stone_gathered: amount }, pName);
+    } else if (resType.includes("wood")) {
+      incrementPlayerStats(pId, { wood_gathered: amount }, pName);
+    }
+    return;
   }
 }
 

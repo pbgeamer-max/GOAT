@@ -10,7 +10,7 @@ const router = express.Router();
 router.get("/api/leaderboard", (req, res) => {
   try {
     const category = req.query.category || "kills";
-    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
     const rankings = getLeaderboard(category, limit);
     res.json({
       success: true,

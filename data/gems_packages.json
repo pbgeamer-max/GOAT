@@ -8,12 +8,11 @@
     "subtext": "One-time purchase",
     "bonusValue": null,
     "badge": null,
-    "image": "/images/gems/gems_80.jpg",
+    "image": "/images/gems/gems_80.png",
+    "imageScale": "1.0",
     "availableOn": ["3x", "5x", "10x"],
     "theme": "slate",
-    "borderClass": "border border-[#1e2638] hover:border-[#2f3d59]",
-    "btnClass": "bg-[#1c2438] hover:bg-[#27324c] text-white font-bold",
-    "glowColor": "rgba(59, 130, 246, 0.15)"
+    "glowColor": "rgba(100, 116, 139, 0.15)"
   },
   {
     "id": "gems_1200",
@@ -24,12 +23,11 @@
     "subtext": "One-time purchase",
     "bonusValue": "+10% More Value",
     "badge": null,
-    "image": "/images/gems/gems_1200.jpg",
+    "image": "/images/gems/gems_1200.png",
+    "imageScale": "1.0",
     "availableOn": ["3x", "5x", "10x"],
-    "theme": "blue",
-    "borderClass": "border border-[#1e2638] hover:border-[#2f3d59]",
-    "btnClass": "bg-[#1c2438] hover:bg-[#27324c] text-white font-bold",
-    "glowColor": "rgba(59, 130, 246, 0.2)"
+    "theme": "slate",
+    "glowColor": "rgba(100, 116, 139, 0.15)"
   },
   {
     "id": "gems_2500",
@@ -40,11 +38,10 @@
     "subtext": "One-time purchase",
     "bonusValue": "+18% More Value",
     "badge": { "text": "MOST POPULAR 🔥", "color": "orange" },
-    "image": "/images/gems/gems_2500.jpg",
+    "image": "/images/gems/gems_2500.png",
+    "imageScale": "1.0",
     "availableOn": ["3x", "5x", "10x"],
     "theme": "orange",
-    "borderClass": "border-2 border-[#f97316] shadow-[0_0_35px_rgba(249,115,22,0.25)] hover:shadow-[0_0_50px_rgba(249,115,22,0.45)]",
-    "btnClass": "bg-[#f97316] hover:bg-[#ea580c] text-white font-black shadow-[0_0_20px_rgba(249,115,22,0.4)]",
     "glowColor": "rgba(249, 115, 22, 0.4)"
   },
   {
@@ -56,11 +53,10 @@
     "subtext": "One-time purchase",
     "bonusValue": "+22% More Value",
     "badge": { "text": "BEST VALUE 💎", "color": "emerald" },
-    "image": "/images/gems/gems_5500.jpg",
+    "image": "/images/gems/gems_5500.png",
+    "imageScale": "1.0",
     "availableOn": ["3x", "5x", "10x"],
     "theme": "emerald",
-    "borderClass": "border-2 border-[#10b981] shadow-[0_0_35px_rgba(16,185,129,0.25)] hover:shadow-[0_0_50px_rgba(16,185,129,0.45)]",
-    "btnClass": "bg-[#10b981] hover:bg-[#059669] text-black font-black shadow-[0_0_20px_rgba(16,185,129,0.4)]",
     "glowColor": "rgba(16, 185, 129, 0.4)"
   },
   {
@@ -72,11 +68,10 @@
     "subtext": "One-time purchase",
     "bonusValue": "+27% More Value",
     "badge": { "text": "MAX VALUE 👑", "color": "gold" },
-    "image": "/images/gems/gems_16500.jpg",
+    "image": "/images/gems/gems_16500.png",
+    "imageScale": "1.0",
     "availableOn": ["3x", "5x", "10x"],
     "theme": "gold",
-    "borderClass": "border-2 border-[#eab308] shadow-[0_0_35px_rgba(234,179,8,0.25)] hover:shadow-[0_0_50px_rgba(234,179,8,0.45)]",
-    "btnClass": "bg-[#eab308] hover:bg-[#ca8a04] text-black font-black shadow-[0_0_25px_rgba(234,179,8,0.45)]",
     "glowColor": "rgba(234, 179, 8, 0.45)"
   }
 ]

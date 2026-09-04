@@ -431,8 +431,23 @@ export function getVoiceLeaderboard(limit = 10) {
 /**
  * Get Leaderboard rankings (Only real players)
  */
-export function getLeaderboard(category = "kills", limit = 10) {
-  const allowed = ["kills", "deaths", "kd_ratio", "playtime_seconds", "wood_gathered", "stone_gathered", "metal_gathered", "sulfur_gathered", "explosives_used", "voice_time_seconds"];
+export function getLeaderboard(category = "kills", limit = 50) {
+  const allowed = [
+    "kills",
+    "deaths",
+    "kd_ratio",
+    "playtime_seconds",
+    "wood_gathered",
+    "stone_gathered",
+    "metal_gathered",
+    "sulfur_gathered",
+    "total_farmed",
+    "explosives_used",
+    "rockets_fired",
+    "c4_used",
+    "satchels_used",
+    "voice_time_seconds",
+  ];
   const sortCol = allowed.includes(category) ? category : "kills";
 
   const list = Object.values(memCache.users)
@@ -442,18 +457,46 @@ export function getLeaderboard(category = "kills", limit = 10) {
       const kills = s.kills || 0;
       const deaths = s.deaths || 0;
       const kd = deaths > 0 ? parseFloat((kills / deaths).toFixed(2)) : kills;
+
+      const wood = s.wood_gathered || 0;
+      const stone = s.stone_gathered || 0;
+      const metal = s.metal_gathered || 0;
+      const sulfur = s.sulfur_gathered || 0;
+      const total_farmed = wood + stone + metal + sulfur;
+
+      const rockets = s.rockets_fired || 0;
+      const c4 = s.c4_used || 0;
+      const satchels = s.satchels_used || 0;
+      const explosives_used = (s.explosives_used || 0) || (rockets + c4 + satchels);
+
       return {
         ...s,
+        kills,
+        deaths,
+        kd_ratio: kd,
+        wood_gathered: wood,
+        stone_gathered: stone,
+        metal_gathered: metal,
+        sulfur_gathered: sulfur,
+        total_farmed,
+        rockets_fired: rockets,
+        c4_used: c4,
+        satchels_used: satchels,
+        explosives_used,
         steam_id: u.steam_id,
-        steam_name: u.steam_name,
+        steam_name: u.steam_name || "Survivor",
         avatar: u.avatar,
         discord_tag: u.discord_tag,
         voice_time_seconds: u.voice_time_seconds || 0,
-        kd_ratio: kd,
       };
     });
 
-  list.sort((a, b) => (b[sortCol] ?? (sortCol === "voice_time_seconds" ? b.voice_time_seconds : 0)) - (a[sortCol] ?? 0));
+  list.sort((a, b) => {
+    const valA = a[sortCol] ?? (sortCol === "voice_time_seconds" ? a.voice_time_seconds : 0);
+    const valB = b[sortCol] ?? (sortCol === "voice_time_seconds" ? b.voice_time_seconds : 0);
+    return valB - valA;
+  });
+
   return list.slice(0, limit);
 }
 
@@ -508,11 +551,19 @@ export function incrementPlayerStats(steam_id, deltas = {}, playerName = null) {
     headshots: 0,
     structures_built: 0,
     explosives_used: 0,
+    rockets_fired: 0,
+    c4_used: 0,
+    satchels_used: 0,
     wood_gathered: 0,
     stone_gathered: 0,
     metal_gathered: 0,
     sulfur_gathered: 0,
   };
+
+  const newRockets = (cur.rockets_fired || 0) + (deltas.rockets_fired || 0);
+  const newC4 = (cur.c4_used || 0) + (deltas.c4_used || 0);
+  const newSatchels = (cur.satchels_used || 0) + (deltas.satchels_used || 0);
+  const newExplosives = (cur.explosives_used || 0) + (deltas.explosives_used || 0) + (deltas.rockets_fired || 0) + (deltas.c4_used || 0) + (deltas.satchels_used || 0);
 
   memCache.users[steam_id].stats = {
     ...cur,
@@ -521,7 +572,10 @@ export function incrementPlayerStats(steam_id, deltas = {}, playerName = null) {
     playtime_seconds: (cur.playtime_seconds || 0) + (deltas.playtime_seconds || 0),
     headshots: (cur.headshots || 0) + (deltas.headshots || 0),
     structures_built: (cur.structures_built || 0) + (deltas.structures_built || 0),
-    explosives_used: (cur.explosives_used || 0) + (deltas.explosives_used || 0),
+    explosives_used: newExplosives,
+    rockets_fired: newRockets,
+    c4_used: newC4,
+    satchels_used: newSatchels,
     wood_gathered: (cur.wood_gathered || 0) + (deltas.wood_gathered || 0),
     stone_gathered: (cur.stone_gathered || 0) + (deltas.stone_gathered || 0),
     metal_gathered: (cur.metal_gathered || 0) + (deltas.metal_gathered || 0),

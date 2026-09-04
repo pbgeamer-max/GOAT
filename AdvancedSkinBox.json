@@ -1,0 +1,78 @@
+{
+  "General": {
+    "Enabled": true,
+    "RequirePermission": false,
+    "OwnershipMode": "ServerFree",
+    "AllowPaidSkins": false,
+    "AllowDLC": false,
+    "OnlyFreeSkins": true,
+    "HideInvalidSkins": true,
+    "HideItemsWithoutSkins": true,
+    "Debug": false
+  },
+  "ItemFilter": {
+    "Enabled": true,
+    "UseWhitelist": false,
+    "Whitelist": [],
+    "Blacklist": [
+      "rock",
+      "torch",
+      "rock",
+      "torch",
+      "rock",
+      "torch"
+    ],
+    "AllowedCategories": [
+      "Weapons",
+      "Tools",
+      "Clothing",
+      "Armor",
+      "Doors",
+      "Storage",
+      "Building",
+      "Misc",
+      "Weapons",
+      "Tools",
+      "Clothing",
+      "Armor",
+      "Doors",
+      "Storage",
+      "Building",
+      "Misc",
+      "Weapons",
+      "Tools",
+      "Clothing",
+      "Armor",
+      "Doors",
+      "Storage",
+      "Building",
+      "Misc"
+    ],
+    "BlockedCategories": []
+  },
+  "SkinFilter": {
+    "StrictValidation": true,
+    "UseWhitelist": false,
+    "Whitelist": [],
+    "Blacklist": [],
+    "OnlyFreeSkins": true,
+    "AllowPaidSkins": false,
+    "AllowDLC": false,
+    "ShowLockedSkins": false
+  },
+  "UI": {
+    "ItemsPerPage": 20,
+    "SkinsPerPage": 24,
+    "EnableSearch": true,
+    "EnableCategories": true,
+    "EnableFavorites": true,
+    "DefaultSort": "Favorites"
+  },
+  "Performance": {
+    "ImportBatchSize": 500,
+    "ValidationBatchSize": 500,
+    "UseCache": true,
+    "LazyLoading": true,
+    "RevalidateHours": 24.0
+  }
+}

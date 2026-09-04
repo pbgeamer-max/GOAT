@@ -7,37 +7,31 @@ import {
   Copy,
   Check,
   ExternalLink,
-  Sparkles,
+  Crown,
   ShieldCheck,
   MessageSquare,
   User,
   Zap,
 } from "lucide-react";
 
-export interface GemsPackage {
+export interface VipRankItem {
   id: string;
-  gems: number;
   title: string;
+  subtitle: string;
   price: number;
-  priceText: string;
-  subtext?: string;
-  bonusValue?: string | null;
-  badge?: { text: string; color: string } | null;
-  image: string;
-  imageScale?: string;
-  availableOn: string[];
-  theme: string;
-  borderClass?: string;
-  btnClass?: string;
-  glowColor?: string;
+  priceText?: string;
+  billing?: string;
+  perks: string[];
+  accentColor: string;
+  badge?: string;
 }
 
-interface GemsPurchaseModalProps {
-  pkg: GemsPackage;
+interface VipPurchaseModalProps {
+  rank: VipRankItem;
   onClose: () => void;
 }
 
-export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClose }) => {
+export const VipPurchaseModal: React.FC<VipPurchaseModalProps> = ({ rank, onClose }) => {
   const { user } = useAuth();
   const { discordUrl } = useServer();
   const { showToast } = useToast();
@@ -47,14 +41,14 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
 
   const steamIdToUse = (user?.steam_id || steamInput || "").trim();
 
-  const orderText = `🛒 [GOAT 5X GEMS ORDER]
+  const orderText = `👑 [GOAT 5X VIP RANK ORDER]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-• Package: ${pkg.title} (${pkg.gems.toLocaleString()} GEMS)
-• Price: ${pkg.priceText} USD
-• Value Bonus: ${pkg.bonusValue || "Standard Pack"}
+• Rank / Package: ${rank.title} (${rank.priceText || `$${rank.price}`}${rank.billing || "/mo"})
 • SteamID64: ${steamIdToUse || "[Please enter your SteamID]"}
 • Player: ${user?.steam_name || "Guest Customer"}
 • Server: GOAT 5X NO BPS
+• Perks:
+${rank.perks.map((p) => `  - ${p}`).join("\n")}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 (Ticket created via website store)`;
 
@@ -65,7 +59,7 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
     }
     navigator.clipboard.writeText(orderText);
     setCopied(true);
-    showToast("Order details copied to clipboard! Paste it in your Discord ticket.", "success");
+    showToast("VIP Order details copied! Paste it in your Discord ticket.", "success");
     setTimeout(() => setCopied(false), 3000);
   };
 
@@ -75,15 +69,20 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      {/* Click outside to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
       <div
         className="relative z-10 w-full max-w-xl bg-gradient-to-b from-[#0f172a] to-[#090d16] border border-[#1e293b] rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.95)] overflow-hidden"
         style={{
-          boxShadow: `0 25px 60px rgba(0,0,0,0.9), 0 0 45px ${pkg.glowColor}25`,
+          boxShadow: `0 25px 60px rgba(0,0,0,0.9), 0 0 45px ${rank.accentColor}25`,
         }}
       >
+        {/* Accent Bar */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1.5"
+          style={{ backgroundColor: rank.accentColor }}
+        />
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -94,39 +93,42 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#080d1a] border border-[#1e2a42] p-2 flex-shrink-0 flex items-center justify-center overflow-hidden">
-            <img
-              src={pkg.image}
-              alt={pkg.title}
-              className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(241,196,15,0.4)]"
-            />
+          <div
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center border shrink-0"
+            style={{
+              backgroundColor: `${rank.accentColor}18`,
+              borderColor: `${rank.accentColor}40`,
+            }}
+          >
+            <Crown className="w-7 h-7" style={{ color: rank.accentColor }} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-yellow-400 uppercase tracking-widest flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> GEMS STORE PACKAGE
+              <span
+                className="font-mono text-xs font-bold uppercase tracking-widest flex items-center gap-1"
+                style={{ color: rank.accentColor }}
+              >
+                <Zap className="w-3.5 h-3.5" /> OFFICIAL VIP RANK
               </span>
-              {pkg.badge && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                  {pkg.badge.text}
+              {rank.badge && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                  {rank.badge}
                 </span>
               )}
             </div>
             <h3 className="font-display font-black text-2xl sm:text-3xl text-white uppercase tracking-tight">
-              {pkg.title}
+              {rank.title}
             </h3>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="font-mono font-black text-xl text-yellow-400">{pkg.priceText}</span>
-              {pkg.bonusValue && (
-                <span className="text-xs font-bold text-emerald-400 font-mono">
-                  {pkg.bonusValue}
-                </span>
-              )}
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="font-display font-black text-xl text-white">
+                {rank.priceText || `$${rank.price}`}
+              </span>
+              <span className="text-xs text-zinc-400 font-mono">{rank.billing || "/mo"}</span>
             </div>
           </div>
         </div>
 
-        {/* Steps Container */}
+        {/* Steps */}
         <div className="space-y-4 mb-6">
           {/* Step 1: Steam ID */}
           <div className="p-4 rounded-2xl bg-[#0c1220] border border-[#1e293b]">
@@ -142,17 +144,15 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
               )}
             </div>
 
-            <div className="relative">
-              <input
-                type="text"
-                value={steamInput}
-                onChange={(e) => setSteamInput(e.target.value)}
-                placeholder="Enter your SteamID64 (e.g. 76561198...)"
-                className="w-full px-4 py-2.5 rounded-xl bg-black/60 border border-[#1e293b] text-white font-mono text-xs focus:outline-none focus:border-yellow-400 transition-colors"
-              />
-            </div>
+            <input
+              type="text"
+              value={steamInput}
+              onChange={(e) => setSteamInput(e.target.value)}
+              placeholder="Enter your SteamID64 (e.g. 76561198...)"
+              className="w-full px-4 py-2.5 rounded-xl bg-black/60 border border-[#1e293b] text-white font-mono text-xs focus:outline-none focus:border-yellow-400 transition-colors"
+            />
             <p className="text-[11px] text-zinc-400 mt-1.5 leading-relaxed">
-              GEMS will be credited directly to this account in-game upon payment verification.
+              VIP rank permissions will be activated automatically on this SteamID via live RCON.
             </p>
           </div>
 
@@ -161,7 +161,7 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
             <div className="flex items-center justify-between mb-2">
               <span className="font-display font-bold text-xs uppercase tracking-wider text-zinc-200 flex items-center gap-2">
                 <Copy className="w-4 h-4 text-yellow-400" />
-                <span>2. ORDER DETAILS</span>
+                <span>2. VIP ORDER DETAILS</span>
               </span>
               <button
                 onClick={handleCopyOrder}
@@ -172,24 +172,24 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
               </button>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-black/70 border border-white/5 font-mono text-[11px] text-zinc-300 whitespace-pre-line select-all">
+            <div className="p-2.5 rounded-xl bg-black/70 border border-white/5 font-mono text-[11px] text-zinc-300 whitespace-pre-line select-all max-h-32 overflow-y-auto">
               {orderText}
             </div>
           </div>
 
-          {/* Step 3: Discord Instructions */}
+          {/* Step 3: Discord */}
           <div className="p-4 rounded-2xl bg-[#5865F2]/10 border border-[#5865F2]/30 text-xs text-zinc-300 space-y-1.5">
             <div className="flex items-center gap-2 font-bold text-[#8ea1e1]">
               <MessageSquare className="w-4 h-4" />
               <span>3. OPEN A TICKET ON DISCORD</span>
             </div>
             <p className="leading-relaxed text-zinc-300">
-              Click the button below to join our Discord server. Open a ticket in the <b>#tickets</b> section and paste your copied order details along with your payment proof (PayPal / Crypto / Cards / Cash).
+              Open a ticket in <b>#tickets</b> on Discord and send your copied order. We accept PayPal, Credit Card, Crypto, and more.
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleCopyOrder}
@@ -209,11 +209,10 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
           </button>
         </div>
 
-        {/* Footer Guarantee */}
         <div className="mt-4 text-center">
           <p className="text-[11px] font-mono text-zinc-400 flex items-center justify-center gap-2">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>100% Instant & Secure Delivery via Automated Server Console</span>
+            <span>Instant In-Game Delivery via Automated Server Console</span>
           </p>
         </div>
       </div>

@@ -1,0 +1,18 @@
+[
+  {
+    "Timestamp": "2026-08-27T20:08:10.322615Z",
+    "AdminSteamID": "Console",
+    "Action": "IMPORT",
+    "SkinID": 0,
+    "Shortname": "All",
+    "Details": "Imported 16 entries."
+  },
+  {
+    "Timestamp": "2026-08-27T20:08:17.710276Z",
+    "AdminSteamID": "Console",
+    "Action": "VALIDATE",
+    "SkinID": 0,
+    "Shortname": "All",
+    "Details": "[AdvancedSkinBox] Validation complete. Valid: 16, Invalid/Excluded: 0."
+  }
+]

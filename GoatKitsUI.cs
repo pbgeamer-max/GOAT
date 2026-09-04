@@ -463,7 +463,7 @@ namespace Oxide.Plugins
             // VIP Tiers & Discord Community Kits
             kits.Add(new KitModel
             {
-                Id = "vip_kit", TabName = "VIP", Title = "VIP KIT", ColorHex = ColorChampion,
+                Id = "vip_kit", TabName = "VIP", Title = "CHAMPION", ColorHex = ColorChampion,
                 Currency = "USD", Price = 500, PriceText = "5.00$", LockType = "VIP",
                 CustomUrl = "https://discord.gg/7uRsxfknSG", CooldownHours = 2f,
                 Items = new List<ItemData> {
@@ -479,7 +479,7 @@ namespace Oxide.Plugins
 
             kits.Add(new KitModel
             {
-                Id = "mvp_kit", TabName = "VIP", Title = "MVP KIT", ColorHex = ColorPrime,
+                Id = "mvp_kit", TabName = "VIP", Title = "VANGUARD", ColorHex = ColorVanguard,
                 Currency = "USD", Price = 1000, PriceText = "10.00$", LockType = "MVP",
                 CustomUrl = "https://discord.gg/7uRsxfknSG", CooldownHours = 2f,
                 Items = new List<ItemData> {
@@ -496,7 +496,7 @@ namespace Oxide.Plugins
 
             kits.Add(new KitModel
             {
-                Id = "god_kit", TabName = "VIP", Title = "GOD KIT", ColorHex = ColorMythic,
+                Id = "god_kit", TabName = "VIP", Title = "MYTHIC", ColorHex = ColorMythic,
                 Currency = "USD", Price = 2000, PriceText = "20.00$", LockType = "GOD",
                 CustomUrl = "https://discord.gg/7uRsxfknSG", CooldownHours = 1f,
                 Items = new List<ItemData> {
@@ -513,7 +513,7 @@ namespace Oxide.Plugins
 
             kits.Add(new KitModel
             {
-                Id = "builder_kit", TabName = "VIP", Title = "BUILDER KIT", ColorHex = ColorSuccess,
+                Id = "builder_kit", TabName = "VIP", Title = "PRIME", ColorHex = ColorPrime,
                 Currency = "USD", Price = 750, PriceText = "7.50$", LockType = "BUILDER",
                 CustomUrl = "https://discord.gg/7uRsxfknSG", CooldownHours = 2f,
                 Items = new List<ItemData> {
@@ -965,10 +965,81 @@ namespace Oxide.Plugins
             return false;
         }
 
+        // ─── Chat Color Hook ─────────────────────────────────────────────────────
+        // Colors the player's display name in chat based on their purchased tier:
+        //   CHAMPION (VIP)  → Gold   #F9BB14
+        //   VANGUARD (MVP)  → Red    #EB2D2D
+        //   MYTHIC   (GOD)  → Purple #A63FFF
+        //   PRIME (BUILDER) → Sky    #2DE0A6
+        //   GUNS            → Orange #F5A623
+        // NOTE: Chat coloring is handled by Clans.cs via GetPlayerTierColor() export.
+        // This hook only fires for players NOT in a clan (Clans returns false for them).
+        object OnPlayerChat(BasePlayer player, string message, ConVar.Chat.ChatChannel channel)
+        {
+            if (player == null) return null;
+
+            // If Clans plugin is active, it handles ALL chat formatting (incl. tier color)
+            Plugin clansPlugin = Clans ?? UniversalClans ?? RustClans;
+            if (clansPlugin != null && clansPlugin.IsLoaded) return null;
+
+            // No Clans plugin — apply tier color ourselves
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            string tierColor = null;
+            if (acc.IsGod)          tierColor = "#A63FFF";
+            else if (acc.IsMvp)     tierColor = "#EB2D2D";
+            else if (acc.IsVip)     tierColor = "#F9BB14";
+            else if (acc.IsBuilder) tierColor = "#2DE0A6";
+            else if (acc.IsGuns)    tierColor = "#F5A623";
+
+            if (tierColor == null) return null;
+
+            rust.BroadcastChat($"<color={tierColor}>{player.displayName}</color>", message, player.UserIDString);
+            return true;
+        }
+
+        private string GetTierFriendlyName(string lockType)
+        {
+            switch (lockType?.ToUpperInvariant())
+            {
+                case "VIP":     return "CHAMPION";
+                case "MVP":     return "VANGUARD";
+                case "GOD":     return "MYTHIC";
+                case "BUILDER": return "PRIME";
+                default:        return lockType ?? "NONE";
+            }
+        }
+
+        // Exported: called by Clans.cs to get the tier color for a player's name
+        [HookMethod("GetPlayerTierColor")]
+        public string GetPlayerTierColor(BasePlayer player)
+        {
+            if (player == null) return null;
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            if (acc.IsGod)      return "#A63FFF";
+            if (acc.IsMvp)      return "#EB2D2D";
+            if (acc.IsVip)      return "#F9BB14";
+            if (acc.IsBuilder)  return "#2DE0A6";
+            if (acc.IsGuns)     return "#F5A623";
+            return null;
+        }
+
+        // Maps friendly tier names → internal LockType names
+        private string NormalizeTier(string tier)
+        {
+            switch (tier?.ToLowerInvariant().Trim())
+            {
+                case "champion": return "vip";
+                case "vanguard": return "mvp";
+                case "mythic":   return "god";
+                case "prime":    return "builder";
+                default:         return tier?.ToLowerInvariant().Trim() ?? "none";
+            }
+        }
+
         private bool IsPlayerTier(BasePlayer player, string tier)
         {
             if (player == null) return false;
-            string cleanTier = tier.ToLowerInvariant().Trim();
+            string cleanTier = NormalizeTier(tier); // supports CHAMPION/VANGUARD/MYTHIC/PRIME aliases
             var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
 
             // 1. Check expiration if active
@@ -1040,7 +1111,7 @@ namespace Oxide.Plugins
 
             long now = GetCurrentUnix();
             long expiryTime = durationDays > 0 ? (now + ((long)durationDays * 86400L)) : 0L;
-            string cleanTier = tier.ToLowerInvariant().Trim();
+            string cleanTier = NormalizeTier(tier); // supports CHAMPION/VANGUARD/MYTHIC/PRIME aliases
 
             // Strict tier separation: if setting a VIP tier, clear and revoke all other VIP tiers
             if (cleanTier == "god")
@@ -1203,14 +1274,18 @@ namespace Oxide.Plugins
                     json,
                     (code, response) =>
                     {
-                        if (code == 200)
+                        try
                         {
-                            Puts($"[GoatKitsUI] 🚀 Successfully synced {kitsData.Kits.Count} kits & {(kitsData.Tabs?.Count ?? 0)} categories to website store!");
+                            if (code == 200)
+                            {
+                                Puts($"[GoatKitsUI] 🚀 Successfully synced {kitsData?.Kits?.Count ?? 0} kits & {(kitsData?.Tabs?.Count ?? 0)} categories to website store!");
+                            }
+                            else
+                            {
+                                Puts($"[GoatKitsUI] Web sync warning: HTTP {code} from {endpoint}");
+                            }
                         }
-                        else
-                        {
-                            Puts($"[GoatKitsUI] Web sync warning: HTTP {code} from {endpoint}");
-                        }
+                        catch { }
                     },
                     this,
                     RequestMethod.POST,
@@ -3747,7 +3822,7 @@ namespace Oxide.Plugins
 
             elements.Add(new CuiLabel
             {
-                Text = { Text = $"ACCESS LOCK:  [ CURRENT: <color=#2ECC71>{draft.LockType}</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
+                Text = { Text = $"ACCESS LOCK:  [ CURRENT: <color=#2ECC71>{GetTierFriendlyName(draft.LockType)}</color> ]", FontSize = 10, Align = TextAnchor.MiddleLeft, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" },
                 RectTransform = { AnchorMin = "0.05 0.715", AnchorMax = "0.48 0.755" }
             }, "ModalBox");
 
@@ -3775,31 +3850,31 @@ namespace Oxide.Plugins
 
             elements.Add(new CuiButton
             {
-                Button = { Color = (draft.LockType == "VIP") ? ColorWarning : ColorNavBtn, Command = "goatui.modal.setlock VIP" },
+                Button = { Color = (draft.LockType == "VIP") ? ColorChampion : ColorNavBtn, Command = "goatui.modal.setlock VIP" },
                 RectTransform = { AnchorMin = "0.37 0.67", AnchorMax = "0.48 0.71" },
-                Text = { Text = "⭐ VIP", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                Text = { Text = "⭐ CHAMPION", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
             }, "ModalBox");
 
             // Row 2: MVP, GOD, BUILDER, GUNS
             elements.Add(new CuiButton
             {
-                Button = { Color = (draft.LockType == "MVP") ? ColorActiveBlue : ColorNavBtn, Command = "goatui.modal.setlock MVP" },
+                Button = { Color = (draft.LockType == "MVP") ? ColorVanguard : ColorNavBtn, Command = "goatui.modal.setlock MVP" },
                 RectTransform = { AnchorMin = "0.05 0.625", AnchorMax = "0.14 0.665" },
-                Text = { Text = "💎 MVP", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                Text = { Text = "🔴 VANGUARD", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
             }, "ModalBox");
 
             elements.Add(new CuiButton
             {
-                Button = { Color = (draft.LockType == "GOD") ? ColorPurple : ColorNavBtn, Command = "goatui.modal.setlock GOD" },
+                Button = { Color = (draft.LockType == "GOD") ? ColorMythic : ColorNavBtn, Command = "goatui.modal.setlock GOD" },
                 RectTransform = { AnchorMin = "0.15 0.625", AnchorMax = "0.25 0.665" },
-                Text = { Text = "⚡ GOD", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                Text = { Text = "⚡ MYTHIC", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
             }, "ModalBox");
 
             elements.Add(new CuiButton
             {
-                Button = { Color = (draft.LockType == "BUILDER") ? ColorSuccess : ColorNavBtn, Command = "goatui.modal.setlock BUILDER" },
+                Button = { Color = (draft.LockType == "BUILDER") ? ColorPrime : ColorNavBtn, Command = "goatui.modal.setlock BUILDER" },
                 RectTransform = { AnchorMin = "0.26 0.625", AnchorMax = "0.36 0.665" },
-                Text = { Text = "🏗️ BUILD", FontSize = 9, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
+                Text = { Text = "🏗️ PRIME", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = ColorTextWhite, Font = "robotocondensed-bold.ttf" }
             }, "ModalBox");
 
             elements.Add(new CuiButton
