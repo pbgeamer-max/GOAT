@@ -243,12 +243,12 @@ export async function setRustServerBooster(steamId, isBooster = true, steamName 
   }
 }
 
-export async function setRustServerVip(steamId, isVip = true, tier = "vip", steamName = "Survivor") {
+export async function setRustServerVip(steamId, isVip = true, tier = "vip", steamName = "Survivor", durationDays = 30) {
   if (!steamId) return { success: false, error: "Missing SteamID" };
 
   const id  = String(steamId).trim();
   const lvl = String(tier).toLowerCase().trim() || "vip";
-  console.log(`[RCON VIP] 👑 [${isVip ? "GRANT" : "REVOKE"}] Tier: ${lvl} for ${id} (${steamName})`);
+  console.log(`[RCON VIP] 👑 [${isVip ? "GRANT" : "REVOKE"}] Tier: ${lvl} for ${id} (${steamName}) [Days: ${durationDays}]`);
 
   try {
     if (isVip) {
@@ -257,9 +257,28 @@ export async function setRustServerVip(steamId, isVip = true, tier = "vip", stea
       await executeRconCommand(`o.grant user ${id} buildinggrade.toptier`).catch(() => {});
       await executeRconCommand(`o.grant user ${id} bgrade.4`).catch(() => {});
       await executeRconCommand(`o.grant user ${id} goatkitsui.${lvl}`).catch(() => {});
-      await executeRconCommand(`goatui.setrole ${id} ${lvl} true`).catch(() => {});
-      await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} unlocked ${lvl.toUpperCase()} & HQ Building Upgrade (30 Days)!`).catch(() => {});
-      console.log(`[RCON VIP] ✅ Granted ${lvl} + upgrade.hq for [${id}]`);
+      await executeRconCommand(`goatui.setrole ${id} ${lvl} true ${durationDays}`).catch(() => {});
+
+      // Clean up conflicting tiers in oxide usergroups so ranks are strictly isolated
+      if (lvl === "god") {
+        await executeRconCommand(`o.usergroup remove ${id} mvp`).catch(() => {});
+        await executeRconCommand(`o.usergroup remove ${id} vip`).catch(() => {});
+        await executeRconCommand(`o.revoke user ${id} goatkitsui.mvp`).catch(() => {});
+        await executeRconCommand(`o.revoke user ${id} goatkitsui.vip`).catch(() => {});
+      } else if (lvl === "mvp") {
+        await executeRconCommand(`o.usergroup remove ${id} god`).catch(() => {});
+        await executeRconCommand(`o.usergroup remove ${id} vip`).catch(() => {});
+        await executeRconCommand(`o.revoke user ${id} goatkitsui.god`).catch(() => {});
+        await executeRconCommand(`o.revoke user ${id} goatkitsui.vip`).catch(() => {});
+      } else if (lvl === "vip") {
+        await executeRconCommand(`o.usergroup remove ${id} god`).catch(() => {});
+        await executeRconCommand(`o.usergroup remove ${id} mvp`).catch(() => {});
+        await executeRconCommand(`o.revoke user ${id} goatkitsui.god`).catch(() => {});
+        await executeRconCommand(`o.revoke user ${id} goatkitsui.mvp`).catch(() => {});
+      }
+
+      await executeRconCommand(`say [GOAT 5X] ⭐ ${steamName} unlocked ${lvl.toUpperCase()} (30 Days)!`).catch(() => {});
+      console.log(`[RCON VIP] ✅ Granted ${lvl} + upgrade.hq (30 Days) for [${id}]`);
     } else {
       await executeRconCommand(`o.usergroup remove ${id} ${lvl}`);
       await executeRconCommand(`o.revoke user ${id} upgrade.hq`);
@@ -270,7 +289,7 @@ export async function setRustServerVip(steamId, isVip = true, tier = "vip", stea
       console.log(`[RCON VIP] 🔒 Revoked ${lvl} + upgrade.hq for [${id}]`);
     }
 
-    return { success: true, isVip, tier: lvl };
+    return { success: true, isVip, tier: lvl, durationDays };
   } catch (err) {
     console.error(`[RCON VIP] ❌ Failed for "${id}":`, err.message);
     return { success: false, error: err.message };

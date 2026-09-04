@@ -172,6 +172,7 @@ namespace Oxide.Plugins
             public bool IsBuilder = false;
             public bool IsGuns = false;
             public long LastGemRewardTimestamp = 0;
+            public Dictionary<string, long> TierExpiry = new Dictionary<string, long>();
         }
 
         public class PlayerData
@@ -551,6 +552,22 @@ namespace Oxide.Plugins
             if (playerData.ClaimCounts == null) playerData.ClaimCounts = new Dictionary<string, Dictionary<string, int>>();
             if (playerData.Accounts == null) playerData.Accounts = new Dictionary<string, PlayerAccount>();
 
+            // Auto-clean any legacy multi-tier flags so ranks are strictly isolated
+            foreach (var acc in playerData.Accounts.Values)
+            {
+                if (acc == null) continue;
+                if (acc.TierExpiry == null) acc.TierExpiry = new Dictionary<string, long>();
+                if (acc.IsGod)
+                {
+                    acc.IsMvp = false;
+                    acc.IsVip = false;
+                }
+                else if (acc.IsMvp)
+                {
+                    acc.IsVip = false;
+                }
+            }
+
             long realWipe = GetRealWipeTimestamp();
             if (playerData.LastWipeTimestamp == 0 || Math.Abs(playerData.LastWipeTimestamp - realWipe) > 86400 * 30)
                 playerData.LastWipeTimestamp = realWipe;
@@ -708,28 +725,214 @@ namespace Oxide.Plugins
             string cleanTier = tier.ToLowerInvariant().Trim();
             var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
 
-            if (cleanTier == "vip" && acc.IsVip) return true;
-            if (cleanTier == "mvp" && acc.IsMvp) return true;
-            if (cleanTier == "god" && acc.IsGod) return true;
-            if (cleanTier == "builder" && acc.IsBuilder) return true;
-            if (cleanTier == "guns" && acc.IsGuns) return true;
+            // 1. Check expiration if active
+            if (IsTierExpired(acc, cleanTier))
+            {
+                RevokeTier(player.UserIDString, cleanTier, acc);
+                return false;
+            }
 
-            string perm = $"goatkitsui.{cleanTier}";
-            if (permission.UserHasPermission(player.UserIDString, perm)) return true;
-            if (permission.UserHasGroup(player.UserIDString, cleanTier)) return true;
-            if (permission.UserHasGroup(player.UserIDString, $"{cleanTier}s")) return true;
+            // 2. Strict Account Check (Exclusive: GOD only unlocks GOD; MVP only unlocks MVP; VIP only unlocks VIP)
+            if (cleanTier == "god") return acc.IsGod;
+            if (cleanTier == "mvp") return acc.IsMvp;
+            if (cleanTier == "vip") return acc.IsVip;
+            if (cleanTier == "builder") return acc.IsBuilder;
+            if (cleanTier == "guns") return acc.IsGuns;
 
+            // 3. Direct User Permission check (do NOT use UserHasPermission to prevent group inheritance leakage)
+            string targetPerm = $"goatkitsui.{cleanTier}";
+            string[] directPerms = permission.GetUserPermissions(player.UserIDString);
+            if (directPerms != null)
+            {
+                for (int i = 0; i < directPerms.Length; i++)
+                {
+                    if (directPerms[i].Equals(targetPerm, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+
+            // 4. Direct User Group check (do NOT use UserHasGroup to prevent group inheritance leakage)
+            string[] directGroups = permission.GetUserGroups(player.UserIDString);
+            if (directGroups != null)
+            {
+                for (int i = 0; i < directGroups.Length; i++)
+                {
+                    string g = directGroups[i].ToLowerInvariant().Trim();
+                    if (g == cleanTier || g == $"{cleanTier}s")
+                        return true;
+                }
+            }
+
+            // 5. Discord Roles (exact tier match only)
             if (DiscordRoles != null && DiscordRoles.IsLoaded)
             {
                 try
                 {
-                    var res = DiscordRoles.Call("HasRole", player.userID, tier.ToUpperInvariant());
+                    var res = DiscordRoles.Call("HasRole", player.userID, cleanTier.ToUpperInvariant());
                     if (res is bool && (bool)res) return true;
                 }
                 catch { }
             }
 
             return false;
+        }
+
+        private bool IsTierExpired(PlayerAccount acc, string tier)
+        {
+            if (acc == null || acc.TierExpiry == null) return false;
+            if (acc.TierExpiry.TryGetValue(tier, out long expiry))
+            {
+                return expiry > 0 && GetCurrentUnix() >= expiry;
+            }
+            return false;
+        }
+
+        private void GrantTier(string targetId, string tier, int durationDays = 30)
+        {
+            var acc = GetOrCreateAccount(targetId, null);
+            if (acc.TierExpiry == null) acc.TierExpiry = new Dictionary<string, long>();
+
+            long now = GetCurrentUnix();
+            long expiryTime = durationDays > 0 ? (now + ((long)durationDays * 86400L)) : 0L;
+            string cleanTier = tier.ToLowerInvariant().Trim();
+
+            // Strict tier separation: if setting a VIP tier, clear and revoke all other VIP tiers
+            if (cleanTier == "god")
+            {
+                acc.IsGod = true;
+                acc.IsMvp = false;
+                acc.IsVip = false;
+                acc.TierExpiry["god"] = expiryTime;
+                acc.TierExpiry.Remove("mvp");
+                acc.TierExpiry.Remove("vip");
+
+                permission.GrantUserPermission(targetId, PermGod, this);
+                permission.RevokeUserPermission(targetId, PermMvp);
+                permission.RevokeUserPermission(targetId, PermVip);
+
+                permission.AddUserGroup(targetId, "god");
+                permission.RemoveUserGroup(targetId, "mvp");
+                permission.RemoveUserGroup(targetId, "vip");
+            }
+            else if (cleanTier == "mvp")
+            {
+                acc.IsMvp = true;
+                acc.IsGod = false;
+                acc.IsVip = false;
+                acc.TierExpiry["mvp"] = expiryTime;
+                acc.TierExpiry.Remove("god");
+                acc.TierExpiry.Remove("vip");
+
+                permission.GrantUserPermission(targetId, PermMvp, this);
+                permission.RevokeUserPermission(targetId, PermGod);
+                permission.RevokeUserPermission(targetId, PermVip);
+
+                permission.AddUserGroup(targetId, "mvp");
+                permission.RemoveUserGroup(targetId, "god");
+                permission.RemoveUserGroup(targetId, "vip");
+            }
+            else if (cleanTier == "vip")
+            {
+                acc.IsVip = true;
+                acc.IsMvp = false;
+                acc.IsGod = false;
+                acc.TierExpiry["vip"] = expiryTime;
+                acc.TierExpiry.Remove("god");
+                acc.TierExpiry.Remove("mvp");
+
+                permission.GrantUserPermission(targetId, PermVip, this);
+                permission.RevokeUserPermission(targetId, PermGod);
+                permission.RevokeUserPermission(targetId, PermMvp);
+
+                permission.AddUserGroup(targetId, "vip");
+                permission.RemoveUserGroup(targetId, "god");
+                permission.RemoveUserGroup(targetId, "mvp");
+            }
+            else if (cleanTier == "builder")
+            {
+                acc.IsBuilder = true;
+                acc.TierExpiry["builder"] = expiryTime;
+                permission.GrantUserPermission(targetId, PermBuilder, this);
+                permission.AddUserGroup(targetId, "builder");
+            }
+            else if (cleanTier == "guns")
+            {
+                acc.IsGuns = true;
+                acc.TierExpiry["guns"] = expiryTime;
+                permission.GrantUserPermission(targetId, PermGuns, this);
+                permission.AddUserGroup(targetId, "guns");
+            }
+
+            SavePlayerData();
+
+            var targetPlayer = BasePlayer.Find(targetId);
+            if (targetPlayer != null && targetPlayer.IsConnected)
+            {
+                string expiryText = durationDays > 0 ? $"{durationDays} Days" : "Permanent";
+                SendReply(targetPlayer, $"<color=#2ECC71>[RANK UNLOCKED]</color> Your <color=#F5A623>{cleanTier.ToUpperInvariant()}</color> rank perks & /kit are active! Duration: <color=#00A8FF>{expiryText}</color>");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", targetPlayer.transform.position);
+                OpenMainUI(targetPlayer);
+            }
+        }
+
+        private void RevokeTier(string targetId, string tier, PlayerAccount acc = null)
+        {
+            if (acc == null) acc = GetOrCreateAccount(targetId, null);
+            if (acc.TierExpiry == null) acc.TierExpiry = new Dictionary<string, long>();
+
+            string cleanTier = tier.ToLowerInvariant().Trim();
+            if (cleanTier == "god") acc.IsGod = false;
+            else if (cleanTier == "mvp") acc.IsMvp = false;
+            else if (cleanTier == "vip") acc.IsVip = false;
+            else if (cleanTier == "builder") acc.IsBuilder = false;
+            else if (cleanTier == "guns") acc.IsGuns = false;
+
+            acc.TierExpiry.Remove(cleanTier);
+
+            string perm = $"goatkitsui.{cleanTier}";
+            permission.RevokeUserPermission(targetId, perm);
+            permission.RemoveUserGroup(targetId, cleanTier);
+
+            SavePlayerData();
+
+            var targetPlayer = BasePlayer.Find(targetId);
+            if (targetPlayer != null && targetPlayer.IsConnected)
+            {
+                SendReply(targetPlayer, $"<color=#E74C3C>[RANK EXPIRED]</color> Your <color=#888888>{cleanTier.ToUpperInvariant()}</color> rank has expired (30 days completed).");
+                Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.denied.prefab", targetPlayer.transform.position);
+                OpenMainUI(targetPlayer);
+            }
+        }
+
+        private void CheckExpiredRanks()
+        {
+            if (playerData == null || playerData.Accounts == null) return;
+            long now = GetCurrentUnix();
+            List<string> expiredKeys = new List<string>();
+
+            foreach (var kvp in playerData.Accounts)
+            {
+                string userId = kvp.Key;
+                var acc = kvp.Value;
+                if (acc == null || acc.TierExpiry == null) continue;
+
+                expiredKeys.Clear();
+                foreach (var expKvp in acc.TierExpiry)
+                {
+                    string tier = expKvp.Key;
+                    long expiry = expKvp.Value;
+                    if (expiry > 0 && now >= expiry)
+                    {
+                        expiredKeys.Add(tier);
+                    }
+                }
+
+                foreach (var tier in expiredKeys)
+                {
+                    Puts($"[GoatKitsUI] Rank '{tier}' expired for SteamID {userId} ({acc.Name}). Revoking perks...");
+                    RevokeTier(userId, tier, acc);
+                }
+            }
         }
 
         private void SyncKitsToWeb()
@@ -885,6 +1088,7 @@ namespace Oxide.Plugins
 
         private void ProcessHourlyGems()
         {
+            CheckExpiredRanks();
             long now = GetCurrentUnix();
             foreach (var p in BasePlayer.activePlayerList)
             {
@@ -1168,6 +1372,30 @@ namespace Oxide.Plugins
             }
         }
 
+        void OnPlayerConnected(BasePlayer player)
+        {
+            if (player == null) return;
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            if (acc != null && acc.TierExpiry != null)
+            {
+                long now = GetCurrentUnix();
+                List<string> expired = null;
+                foreach (var kvp in acc.TierExpiry)
+                {
+                    if (kvp.Value > 0 && now >= kvp.Value)
+                    {
+                        if (expired == null) expired = new List<string>();
+                        expired.Add(kvp.Key);
+                    }
+                }
+                if (expired != null)
+                {
+                    foreach (var t in expired)
+                        RevokeTier(player.UserIDString, t, acc);
+                }
+            }
+        }
+
         #endregion
 
         #region Initialization & Commands
@@ -1241,6 +1469,99 @@ namespace Oxide.Plugins
 
         [ChatCommand("goat")]
         private void CmdGoat(BasePlayer player, string cmd, string[] args) => OpenMainUI(player);
+
+        [ChatCommand("setrank")]
+        private void CmdChatSetRank(BasePlayer player, string cmd, string[] args)
+        {
+            if (player != null && !HasRank(player))
+            {
+                SendReply(player, "<color=#E74C3C>[ERROR]</color> You do not have permission to use this command.");
+                return;
+            }
+
+            if (args.Length < 2)
+            {
+                SendReply(player, "<color=#F5A623>[USAGE]</color> /setrank <player/steamid> <vip|mvp|god|builder|guns> [days=30]");
+                return;
+            }
+
+            string targetInput = args[0];
+            string tier = args[1].ToLowerInvariant().Trim();
+            int days = args.Length >= 3 ? ParseIntSafe(args[2], 30) : 30;
+
+            string[] validTiers = { "vip", "mvp", "god", "builder", "guns" };
+            if (!validTiers.Contains(tier))
+            {
+                SendReply(player, $"<color=#E74C3C>[ERROR]</color> Invalid tier! Valid options: {string.Join(", ", validTiers)}");
+                return;
+            }
+
+            BasePlayer targetPlayer = BasePlayer.Find(targetInput);
+            string targetId = targetPlayer != null ? targetPlayer.UserIDString : targetInput;
+
+            GrantTier(targetId, tier, days);
+            string targetName = targetPlayer != null ? targetPlayer.displayName : targetId;
+            SendReply(player, $"<color=#2ECC71>[SUCCESS]</color> Granted <color=#F5A623>{tier.ToUpper()}</color> rank to <color=#00A8FF>{targetName}</color> for <color=#2ECC71>{days} Days</color>!");
+        }
+
+        [ChatCommand("removerank")]
+        private void CmdChatRemoveRank(BasePlayer player, string cmd, string[] args)
+        {
+            if (player != null && !HasRank(player))
+            {
+                SendReply(player, "<color=#E74C3C>[ERROR]</color> You do not have permission to use this command.");
+                return;
+            }
+
+            if (args.Length < 2)
+            {
+                SendReply(player, "<color=#F5A623>[USAGE]</color> /removerank <player/steamid> <vip|mvp|god|builder|guns>");
+                return;
+            }
+
+            string targetInput = args[0];
+            string tier = args[1].ToLowerInvariant().Trim();
+
+            BasePlayer targetPlayer = BasePlayer.Find(targetInput);
+            string targetId = targetPlayer != null ? targetPlayer.UserIDString : targetInput;
+
+            RevokeTier(targetId, tier);
+            string targetName = targetPlayer != null ? targetPlayer.displayName : targetId;
+            SendReply(player, $"<color=#2ECC71>[SUCCESS]</color> Revoked <color=#F5A623>{tier.ToUpper()}</color> rank from <color=#00A8FF>{targetName}</color>!");
+        }
+
+        [ChatCommand("myrank")]
+        private void CmdChatMyRank(BasePlayer player, string cmd, string[] args)
+        {
+            if (player == null) return;
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            long now = GetCurrentUnix();
+
+            List<string> activeRanks = new List<string>();
+            string[] allTiers = { "god", "mvp", "vip", "builder", "guns" };
+            foreach (var t in allTiers)
+            {
+                if (IsPlayerTier(player, t))
+                {
+                    string expText = "Permanent";
+                    if (acc.TierExpiry != null && acc.TierExpiry.TryGetValue(t, out long exp) && exp > 0)
+                    {
+                        long remaining = exp - now;
+                        expText = remaining > 0 ? $"Expires in: {FormatSeconds(remaining)}" : "Expired";
+                    }
+                    activeRanks.Add($"<color=#F5A623>{t.ToUpper()}</color> ({expText})");
+                }
+            }
+
+            if (activeRanks.Count > 0)
+            {
+                SendReply(player, $"<color=#00A8FF>[GOAT 5X]</color> Your Active Ranks:\n" + string.Join("\n", activeRanks));
+            }
+            else
+            {
+                SendReply(player, $"<color=#00A8FF>[GOAT 5X]</color> You currently have no active paid ranks. Visit our store or discord: {config.DiscordInviteUrl}");
+            }
+        }
 
         #endregion
 
@@ -2991,42 +3312,16 @@ namespace Oxide.Plugins
             string targetId = arg.GetString(0, "");
             string tier = arg.GetString(1, "vip").ToLowerInvariant().Trim();
             bool status = arg.GetBool(2, true);
+            int durationDays = arg.GetInt(3, 30);
             if (string.IsNullOrEmpty(targetId)) return;
 
-            var acc = GetOrCreateAccount(targetId, null);
-            if (tier == "vip") acc.IsVip = status;
-            else if (tier == "mvp") acc.IsMvp = status;
-            else if (tier == "god") acc.IsGod = status;
-            else if (tier == "builder") acc.IsBuilder = status;
-            else if (tier == "guns") acc.IsGuns = status;
-            SavePlayerData();
-
-            string perm = $"goatkitsui.{tier}";
             if (status)
             {
-                permission.GrantUserPermission(targetId, perm, this);
-                permission.AddUserGroup(targetId, tier);
+                GrantTier(targetId, tier, durationDays);
             }
             else
             {
-                permission.RevokeUserPermission(targetId, perm);
-                permission.RemoveUserGroup(targetId, tier);
-            }
-
-            var targetPlayer = BasePlayer.Find(targetId);
-            if (targetPlayer != null && targetPlayer.IsConnected)
-            {
-                if (status)
-                {
-                    SendReply(targetPlayer, $"<color=#2ECC71>[RANK UNLOCKED]</color> Your <color=#F5A623>{tier.ToUpperInvariant()}</color> rank perks & /kit are now active!");
-                    Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", targetPlayer.transform.position);
-                }
-                else
-                {
-                    SendReply(targetPlayer, $"<color=#E74C3C>[RANK EXPIRED]</color> Your <color=#888888>{tier.ToUpperInvariant()}</color> rank perks have ended.");
-                    Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.denied.prefab", targetPlayer.transform.position);
-                }
-                OpenMainUI(targetPlayer);
+                RevokeTier(targetId, tier);
             }
         }
 
