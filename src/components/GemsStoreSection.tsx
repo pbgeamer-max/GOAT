@@ -185,7 +185,7 @@ export const GemsStoreSection: React.FC<GemsStoreSectionProps> = () => {
                       ${btnClass}
                     `}
                   >
-                    ADD TO CART
+                    BUY NOW
                   </button>
                 </div>
               </div>

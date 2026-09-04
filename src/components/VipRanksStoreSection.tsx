@@ -250,7 +250,7 @@ export const VipRanksStoreSection: React.FC<VipRanksStoreSectionProps> = ({
                         : "bg-[#6366f1] hover:bg-[#4f46e5] text-white shadow-[0_0_20px_rgba(99,102,241,0.35)]"
                     }`}
                   >
-                    <span>ADD TO CART</span>
+                    <span>BUY NOW</span>
                   </button>
                 )}
               </div>

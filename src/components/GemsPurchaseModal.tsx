@@ -156,13 +156,13 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
             </p>
           </div>
 
-          {/* Step 2: Copy Order */}
-          <div className="p-4 rounded-2xl bg-[#0c1220] border border-[#1e293b]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-display font-bold text-xs uppercase tracking-wider text-zinc-200 flex items-center gap-2">
-                <Copy className="w-4 h-4 text-yellow-400" />
-                <span>2. ORDER DETAILS</span>
-              </span>
+          {/* Step 2: Discord Instructions */}
+          <div className="p-4 rounded-2xl bg-[#5865F2]/10 border border-[#5865F2]/30 text-xs text-zinc-300 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-[#8ea1e1]">
+                <MessageSquare className="w-4 h-4" />
+                <span>2. OPEN A TICKET ON DISCORD</span>
+              </div>
               <button
                 onClick={handleCopyOrder}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)] cursor-pointer"
@@ -171,20 +171,8 @@ export const GemsPurchaseModal: React.FC<GemsPurchaseModalProps> = ({ pkg, onClo
                 <span>{copied ? "COPIED!" : "COPY ORDER"}</span>
               </button>
             </div>
-
-            <div className="p-2.5 rounded-xl bg-black/70 border border-white/5 font-mono text-[11px] text-zinc-300 whitespace-pre-line select-all">
-              {orderText}
-            </div>
-          </div>
-
-          {/* Step 3: Discord Instructions */}
-          <div className="p-4 rounded-2xl bg-[#5865F2]/10 border border-[#5865F2]/30 text-xs text-zinc-300 space-y-1.5">
-            <div className="flex items-center gap-2 font-bold text-[#8ea1e1]">
-              <MessageSquare className="w-4 h-4" />
-              <span>3. OPEN A TICKET ON DISCORD</span>
-            </div>
             <p className="leading-relaxed text-zinc-300">
-              Click the button below to join our Discord server. Open a ticket in the <b>#tickets</b> section and paste your copied order details along with your payment proof (PayPal / Crypto / Cards / Cash).
+              Click the button below to join our Discord server. Open a ticket in the <b>#tickets</b> section with your payment proof (PayPal / Crypto / Cards / Cash).
             </p>
           </div>
         </div>
