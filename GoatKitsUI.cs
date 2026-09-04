@@ -1838,6 +1838,50 @@ namespace Oxide.Plugins
             else SendReply(player, "<color=#E74C3C>[SKINBOX]</color> Failed to import skins from Cache.json.");
         }
 
+        [ChatCommand("reskin")]
+        private void CmdChatReskin(BasePlayer player, string cmd, string[] args)
+        {
+            if (player == null) return;
+            var held = player.GetActiveItem();
+            if (held == null || held.info == null)
+            {
+                SendReply(player, "<color=#E74C3C>[SKINBOX]</color> Please hold the weapon or item you want to reskin in your hands!");
+                return;
+            }
+
+            var acc = GetOrCreateAccount(player.UserIDString, player.displayName);
+            ulong targetSkin = 0;
+
+            if (args.Length > 0 && ulong.TryParse(args[0], out ulong customId))
+            {
+                targetSkin = customId;
+            }
+            else if (acc.ActiveCraftSkins != null && acc.ActiveCraftSkins.TryGetValue(held.info.shortname, out ulong activeSkin))
+            {
+                targetSkin = activeSkin;
+            }
+
+            if (targetSkin == 0)
+            {
+                SendReply(player, $"<color=#F5A623>[SKINBOX]</color> No active skin set for <color=#00A8FF>{held.info.displayName.english}</color>. Use <color=#2ECC71>/skinbox</color> to equip a skin!");
+                return;
+            }
+
+            ApplySkinToPlayerItems(player, held.info.shortname, targetSkin);
+            SendReply(player, $"<color=#2ECC71>[SKINBOX]</color> ✨ Applied skin (ID: {targetSkin}) to your <color=#00A8FF>{held.info.displayName.english}</color>!");
+        }
+
+        [ChatCommand("skin")]
+        private void CmdChatSkin(BasePlayer player, string cmd, string[] args)
+        {
+            if (args != null && args.Length > 0 && args[0].Equals("reskin", StringComparison.OrdinalIgnoreCase))
+            {
+                CmdChatReskin(player, cmd, args.Skip(1).ToArray());
+                return;
+            }
+            OpenSkinboxUI(player);
+        }
+
         [ChatCommand("setrank")]
         private void CmdChatSetRank(BasePlayer player, string cmd, string[] args)
         {
@@ -4786,6 +4830,45 @@ namespace Oxide.Plugins
             }
         }
 
+        private void ApplySkinToPlayerItems(BasePlayer player, string shortname, ulong skinId)
+        {
+            if (player == null || player.inventory == null) return;
+
+            var containers = new ItemContainer[] { player.inventory.containerBelt, player.inventory.containerMain, player.inventory.containerWear };
+            foreach (var c in containers)
+            {
+                if (c?.itemList == null) continue;
+                foreach (var item in c.itemList)
+                {
+                    if (item != null && item.info != null && item.info.shortname.Equals(shortname, StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.skin = skinId;
+                        item.MarkDirty();
+
+                        var heldEntity = item.GetHeldEntity();
+                        if (heldEntity != null)
+                        {
+                            heldEntity.skinID = skinId;
+                            heldEntity.SendNetworkUpdate();
+                        }
+                    }
+                }
+            }
+
+            var active = player.GetActiveItem();
+            if (active != null && active.info != null && active.info.shortname.Equals(shortname, StringComparison.OrdinalIgnoreCase))
+            {
+                var held = active.GetHeldEntity();
+                if (held != null)
+                {
+                    held.skinID = skinId;
+                    held.SendNetworkUpdateImmediate();
+                }
+            }
+
+            Effect.server.Run("assets/prefabs/deployable/repair bench/effects/repairbench_skinchange.prefab", player.transform.position);
+        }
+
         [ConsoleCommand("goatui.skinbox.tab")]
         private void CmdSkinboxTab(ConsoleSystem.Arg arg)
         {
@@ -4833,22 +4916,11 @@ namespace Oxide.Plugins
             acc.ActiveCraftSkins[skin.Shortname] = skin.SkinId;
             SavePlayerData();
 
-            // Auto-skin held weapon if matching
-            var held = p.GetActiveItem();
-            if (held != null && held.info != null && held.info.shortname == skin.Shortname)
-            {
-                held.skin = skin.SkinId;
-                held.MarkDirty();
-                var heldEntity = held.GetHeldEntity();
-                if (heldEntity != null)
-                {
-                    heldEntity.skinID = skin.SkinId;
-                    heldEntity.SendNetworkUpdate();
-                }
-            }
+            // Auto-reskin all matching items in player's inventory and hands
+            ApplySkinToPlayerItems(p, skin.Shortname, skin.SkinId);
 
             Effect.server.Run("assets/prefabs/locks/keypad/effects/lock.code.updated.prefab", p.transform.position);
-            SendReply(p, $"<color=#2ECC71>[SKINBOX]</color> 🎉 Successfully unlocked <color=#F1C40F>{skin.Title}</color> permanently! Any <color=#00A8FF>{skin.Shortname.ToUpper()}</color> you craft will now automatically use this skin.");
+            SendReply(p, $"<color=#2ECC71>[SKINBOX]</color> 🎉 Successfully unlocked <color=#F1C40F>{skin.Title}</color> permanently! Any <color=#00A8FF>{skin.Shortname.ToUpper()}</color> you hold or craft will now use this skin.");
             OpenSkinboxUI(p);
         }
 
@@ -4875,19 +4947,8 @@ namespace Oxide.Plugins
             acc.ActiveCraftSkins[skin.Shortname] = skin.SkinId;
             SavePlayerData();
 
-            // Auto-skin held item if matching
-            var held = p.GetActiveItem();
-            if (held != null && held.info != null && held.info.shortname == skin.Shortname)
-            {
-                held.skin = skin.SkinId;
-                held.MarkDirty();
-                var heldEntity = held.GetHeldEntity();
-                if (heldEntity != null)
-                {
-                    heldEntity.skinID = skin.SkinId;
-                    heldEntity.SendNetworkUpdate();
-                }
-            }
+            // Auto-reskin all matching items in player's inventory and hands
+            ApplySkinToPlayerItems(p, skin.Shortname, skin.SkinId);
 
             SendReply(p, $"<color=#2ECC71>[SKINBOX]</color> Active craft skin set to <color=#F1C40F>{skin.Title}</color> for <color=#00A8FF>{skin.Shortname.ToUpper()}</color>!");
             OpenSkinboxUI(p);
