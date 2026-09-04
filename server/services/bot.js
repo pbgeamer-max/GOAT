@@ -8,6 +8,7 @@ import {
   ButtonStyle,
   ActivityType,
   SlashCommandBuilder,
+  PermissionFlagsBits,
 } from "discord.js";
 import {
   updateRoleStatus,
@@ -20,7 +21,7 @@ import {
   grantVipSubscription,
   revokeVipSubscription,
 } from "../database/db.js";
-import { setRustServerBooster, setRustServerVip } from "./rcon.js";
+import { setRustServerBooster, setRustServerVip, executeRconCommand } from "./rcon.js";
 import { config } from "../config.js";
 import dgram from "dgram";
 
@@ -820,10 +821,52 @@ async function registerCommands() {
       new SlashCommandBuilder()
         .setName("topvoice")
         .setDescription("View the Top 10 Discord voice champions leaderboard"),
+      new SlashCommandBuilder()
+        .setName("addgems")
+        .setDescription("[Admin] Give GEMS to a player via SteamID64 or Discord Member")
+        .addIntegerOption((opt) =>
+          opt
+            .setName("amount")
+            .setDescription("Amount of GEMS to give (e.g. 2500)")
+            .setRequired(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("steam_id")
+            .setDescription("Target player SteamID64 (e.g. 76561198000000000)")
+            .setRequired(false)
+        )
+        .addUserOption((opt) =>
+          opt
+            .setName("member")
+            .setDescription("Target Discord member (if linked to Steam)")
+            .setRequired(false)
+        ),
+      new SlashCommandBuilder()
+        .setName("setgems")
+        .setDescription("[Admin] Set exact GEMS balance for a player")
+        .addIntegerOption((opt) =>
+          opt
+            .setName("amount")
+            .setDescription("New balance amount (e.g. 0 or 5000)")
+            .setRequired(true)
+        )
+        .addStringOption((opt) =>
+          opt
+            .setName("steam_id")
+            .setDescription("Target player SteamID64 (e.g. 76561198000000000)")
+            .setRequired(false)
+        )
+        .addUserOption((opt) =>
+          opt
+            .setName("member")
+            .setDescription("Target Discord member (if linked to Steam)")
+            .setRequired(false)
+        ),
     ];
 
     await guild.commands.set(commands);
-    console.log("[Bot] Slash commands (/server, /link, /stats, /voice, /topvoice) registered successfully.");
+    console.log("[Bot] Slash commands (/server, /link, /stats, /voice, /topvoice, /addgems, /setgems) registered successfully.");
   } catch (err) {
     console.error("[Bot] Slash commands registration failed:", err.message);
   }
@@ -986,6 +1029,132 @@ function setupInteractions() {
         .setFooter({ text: "GOAT SERVERS • Continuous Voice Tracking" });
 
       await interaction.reply({ embeds: [embed] });
+    } else if (interaction.commandName === "addgems") {
+      const isAdmin =
+        interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
+        interaction.user.id === config.discord.reportUserId ||
+        interaction.user.id === "684580786858623132" ||
+        interaction.user.id === "897563657347690506";
+
+      if (!isAdmin) {
+        await interaction.reply({
+          content: "❌ هذا الأمر مخصص لإدارة السيرفر فقط!",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const amount = interaction.options.getInteger("amount");
+      const steamIdOpt = interaction.options.getString("steam_id");
+      const memberOpt = interaction.options.getUser("member");
+
+      let targetSteamId = steamIdOpt ? steamIdOpt.trim() : null;
+      let targetName = "Player";
+
+      if (!targetSteamId && memberOpt) {
+        const user = getUserByDiscordId(memberOpt.id);
+        if (user && user.steam_id) {
+          targetSteamId = user.steam_id;
+          targetName = user.steam_name || memberOpt.username;
+        } else {
+          await interaction.reply({
+            content: `❌ العضو <@${memberOpt.id}> لم يقم بربط حسابه في الموقع بعد! يرجى كتابة الـ SteamID64 يدوياً.`,
+            ephemeral: true,
+          });
+          return;
+        }
+      }
+
+      if (!targetSteamId) {
+        await interaction.reply({
+          content: "❌ يرجى كتابة الـ `steam_id` للاعب أو اختيار `member` مرتبط بحسابه!",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      const rconRes = await executeRconCommand(`goatui.addgems ${targetSteamId} ${amount}`);
+
+      const embed = new EmbedBuilder()
+        .setTitle("💎 تم تسليم الجيمز بنجاح • GEMS DELIVERED")
+        .setColor(0xf1c40f)
+        .setDescription(
+          `تم إرسال **+${amount.toLocaleString()} GEMS** بنجاح إلى حساب اللاعب في سيرفر **GOAT 5X**!\n\n` +
+          `🎮 **اللاعب:** \`${targetName}\`\n` +
+          `🆔 **SteamID64:** \`${targetSteamId}\`\n` +
+          `💎 **الكمية:** \`+${amount.toLocaleString()} GEMS\`\n` +
+          `👮 **الأدمن المسلّم:** <@${interaction.user.id}>\n` +
+          `📡 **استجابة السيرفر:** \`${rconRes?.output || "Executed via RCON"}\``
+        )
+        .setFooter({ text: "GOAT SERVERS • Automatic Store Delivery" })
+        .setTimestamp();
+
+      await interaction.followup({ embeds: [embed] });
+    } else if (interaction.commandName === "setgems") {
+      const isAdmin =
+        interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
+        interaction.user.id === config.discord.reportUserId ||
+        interaction.user.id === "684580786858623132" ||
+        interaction.user.id === "897563657347690506";
+
+      if (!isAdmin) {
+        await interaction.reply({
+          content: "❌ هذا الأمر مخصص لإدارة السيرفر فقط!",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const amount = Math.max(0, interaction.options.getInteger("amount") || 0);
+      const steamIdOpt = interaction.options.getString("steam_id");
+      const memberOpt = interaction.options.getUser("member");
+
+      let targetSteamId = steamIdOpt ? steamIdOpt.trim() : null;
+      let targetName = "Player";
+
+      if (!targetSteamId && memberOpt) {
+        const user = getUserByDiscordId(memberOpt.id);
+        if (user && user.steam_id) {
+          targetSteamId = user.steam_id;
+          targetName = user.steam_name || memberOpt.username;
+        } else {
+          await interaction.reply({
+            content: `❌ العضو <@${memberOpt.id}> لم يقم بربط حسابه في الموقع بعد! يرجى كتابة الـ SteamID64 يدوياً.`,
+            ephemeral: true,
+          });
+          return;
+        }
+      }
+
+      if (!targetSteamId) {
+        await interaction.reply({
+          content: "❌ يرجى كتابة الـ `steam_id` للاعب أو اختيار `member` مرتبط بحسابه!",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      const rconRes = await executeRconCommand(`goatui.setgems ${targetSteamId} ${amount}`);
+
+      const embed = new EmbedBuilder()
+        .setTitle("💎 تم تعديل رصيد الجيمز • GEMS BALANCE SET")
+        .setColor(0x3498db)
+        .setDescription(
+          `تم ضبط رصيد الجيمز إلى **${amount.toLocaleString()} GEMS** للاعب في سيرفر **GOAT 5X**!\n\n` +
+          `🎮 **اللاعب:** \`${targetName}\`\n` +
+          `🆔 **SteamID64:** \`${targetSteamId}\`\n` +
+          `💎 **الرصيد الجديد:** \`${amount.toLocaleString()} GEMS\`\n` +
+          `👮 **الأدمن المسلّم:** <@${interaction.user.id}>\n` +
+          `📡 **استجابة السيرفر:** \`${rconRes?.output || "Executed via RCON"}\``
+        )
+        .setFooter({ text: "GOAT SERVERS • Automatic Store Delivery" })
+        .setTimestamp();
+
+      await interaction.followup({ embeds: [embed] });
     }
   });
 }
