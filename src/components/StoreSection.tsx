@@ -48,7 +48,7 @@ export interface LiveKit {
   Items: KitItem[];
 }
 
-const DISCORD_TICKET_URL = "https://discord.gg/7uRsxfknSG";
+const DISCORD_TICKET_URL = "https://discord.gg/EbZwSY7jXy";
 
 /**
  * Returns a working image URL for a Rust item using rustedit.io CDN.

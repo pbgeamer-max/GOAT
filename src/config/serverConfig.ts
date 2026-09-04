@@ -82,7 +82,7 @@ export const SERVER_CONFIG: ServerConfig = {
   fullAddress: "168.100.161.129:28056",
   connectCommand: "connect 168.100.161.129:28056",
   steamConnectUrl: "steam://run/252490//+connect 168.100.161.129:28056/",
-  discordUrl: "https://discord.gg/7uRsxfknSG", // Customizable Discord link
+  discordUrl: "https://discord.gg/EbZwSY7jXy", // Customizable Discord link
   region: "EU / Global Dedicated 10Gbps",
   mapName: "Procedural Map (Custom Monuments)",
   mapSize: 4000,
@@ -188,7 +188,7 @@ export const SERVER_CONFIG: ServerConfig = {
     },
   ],
   socials: {
-    discord: "https://discord.gg/7uRsxfknSG",
+    discord: "https://discord.gg/EbZwSY7jXy",
     steam: "steam://connect/168.100.161.129:28056",
   },
 };

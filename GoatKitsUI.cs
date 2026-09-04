@@ -227,8 +227,8 @@ namespace Oxide.Plugins
             public int RpPerKill = 6;
             public int RpPerBarrel = 1;
             public int RpPerNode = 3;
-            public string WebsiteLinkUrl = "https://yourwebsite.com/link";
-            public string DiscordInviteUrl = "https://discord.gg/7uRsxfknSG";
+            public string WebsiteLinkUrl = "https://rustgoat.com/";
+            public string DiscordInviteUrl = "https://discord.gg/EbZwSY7jXy";
             public string ApiEndpoint = "https://rustgoat.com/api/sync-kits";
             public string ApiSecret = "goat-stats-sync-secret";
             public string LinkedPermission = "discordauth.linked";
@@ -244,8 +244,8 @@ namespace Oxide.Plugins
                 RpPerKill = 6,
                 RpPerBarrel = 1,
                 RpPerNode = 3,
-                WebsiteLinkUrl = "https://yourwebsite.com/link",
-                DiscordInviteUrl = "https://discord.gg/7uRsxfknSG",
+                WebsiteLinkUrl = "https://rustgoat.com/",
+                DiscordInviteUrl = "https://discord.gg/EbZwSY7jXy",
                 ApiEndpoint = "https://rustgoat.com/api/sync-kits",
                 ApiSecret = "goat-stats-sync-secret",
                 LinkedPermission = "discordauth.linked",

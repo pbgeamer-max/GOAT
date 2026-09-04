@@ -74,7 +74,7 @@ export const config = {
     reportUserId: clean(process.env.DISCORD_REPORT_USER_ID || process.env.DISCORD_ADMIN_ID || process.env.DISCORD_STAFF_ID, ""),
     reportChannelId: clean(process.env.DISCORD_REPORT_CHANNEL_ID || process.env.DISCORD_LOG_CHANNEL_ID, "1540348220310552584"),
     reportWebhookUrl: cleanUrl(process.env.DISCORD_REPORT_WEBHOOK_URL, ""),
-    inviteUrl: cleanUrl(process.env.DISCORD_INVITE_URL, "https://discord.gg/7uRsxfknSG"),
+    inviteUrl: cleanUrl(process.env.DISCORD_INVITE_URL, "https://discord.gg/EbZwSY7jXy"),
   },
 
   // Rust Server & RCON
