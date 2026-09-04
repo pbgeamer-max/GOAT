@@ -5114,7 +5114,7 @@ namespace Oxide.Plugins
         {
             var p = arg.Player();
             if (p == null || !HasRank(p) || !skinPriceEditTarget.ContainsKey(p.userID)) return;
-            string input = arg.FullString?.ToString()?.Trim() ?? "";
+            string input = arg.FullString.ToString().Trim();
             int val = ParseIntSafe(input, 50);
             if (val < 0) val = 0;
             skinPriceEditDraft[p.userID] = val.ToString();
