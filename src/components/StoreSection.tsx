@@ -286,20 +286,20 @@ export const StoreSection: React.FC = () => {
             </span>
             <span className="hidden sm:inline text-zinc-500 text-xs">•</span>
             <span className="hidden sm:inline text-zinc-400 text-xs">
-              الكيتات والرتب مأخوذة مباشرة من سيرفر راست وتتحدث تلقائياً فور إضافتها أو حذفها
+              Kits are fetched directly from the Rust server and update automatically when added or removed.
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {lastSyncTime && (
               <span className="font-mono text-[11px] text-zinc-400">
-                آخر تحديث: {lastSyncTime.toLocaleTimeString()}
+                Last sync: {lastSyncTime.toLocaleTimeString()}
               </span>
             )}
             <button
               onClick={() => fetchLiveKits(true)}
               disabled={refreshing}
-              title="مزامنة فورية مع السيرفر"
+              title="Force sync with server"
               className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-all disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-emerald-400" : ""}`} />
@@ -317,7 +317,7 @@ export const StoreSection: React.FC = () => {
               SERVER KITS & <span className="text-[#e62020]">STORE</span>
             </h2>
             <p className="text-zinc-400 text-sm mt-2 max-w-2xl">
-              تصفح كيتات السيرفر ومواردها بدقة، مع استعراض كامل للأسلحة والمواد المتوفرة داخل كل كيت.
+              Browse all VIP ranks and kits available on the server. Click any kit to inspect its full inventory contents.
             </p>
           </div>
 
@@ -361,22 +361,22 @@ export const StoreSection: React.FC = () => {
           {loading ? (
             <div className="col-span-full py-20 text-center">
               <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <span className="text-xs font-mono text-zinc-400">جاري تحميل كيتات السيرفر والموارد...</span>
+              <span className="text-xs font-mono text-zinc-400">Loading server kits...</span>
             </div>
           ) : filteredKits.length === 0 ? (
             <div className="col-span-full py-16 px-6 text-center rounded-2xl bg-[#0b0e15] border border-white/10 flex flex-col items-center justify-center">
               <Package className="w-12 h-12 text-zinc-600 mb-4" />
               <h4 className="font-display font-bold text-lg text-white mb-2">
-                لا توجد كيتات في قسم "{activeTab}" حالياً
+                No kits in "{activeTab}" right now
               </h4>
               <p className="text-zinc-400 text-xs sm:text-sm max-w-md mb-4 leading-relaxed">
-                أي كيت تضيفه أو تحذفه داخل سيرفر راست عبر أمر <span className="text-red-400 font-mono font-bold">/kit</span> يظهر أو يختفي من هنا فوراً وبشكل تلقائي.
+                Any kit added or removed in-game via <span className="text-red-400 font-mono font-bold">/kit</span> will appear or disappear here instantly.
               </p>
               <button
                 onClick={() => setActiveTab("ALL KITS")}
                 className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono text-xs uppercase"
               >
-                عرض كل الكيتات
+                View all kits
               </button>
             </div>
           ) : (
@@ -479,7 +479,7 @@ export const StoreSection: React.FC = () => {
                         className="w-full mt-2 py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-[10px] font-mono text-zinc-400 hover:text-white flex items-center justify-center gap-1 transition-colors"
                       >
                         <Eye className="w-3 h-3 text-red-400" />
-                        <span>+{items.length - 12} المزيد • معاينة الكيت بالكامل</span>
+                        <span>+{items.length - 12} more items — View full kit</span>
                       </button>
                     )}
                   </div>
@@ -491,24 +491,24 @@ export const StoreSection: React.FC = () => {
                       className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 border border-white/5 transition-all"
                     >
                       <Eye className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>معاينة محتويات الكيت (30 خانة)</span>
+                      <span>Inspect Kit Contents (30 slots)</span>
                     </button>
 
                     {unlocked ? (
                       <button
                         onClick={() => {
-                          showToast(`اكتب /kit داخل سيرفر راست لاستلام ${kit.Title}!`, "success");
+                          showToast(`Type /kit in-game to redeem your ${kit.Title} kit!`, "success");
                         }}
                         className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-all"
                       >
-                        <Check className="w-4 h-4" /> UNLOCKED — USE /KIT
+                        <Check className="w-4 h-4" /> UNLOCKED — TYPE /KIT IN-GAME
                       </button>
                     ) : isFree && lock === "LINKED" ? (
                       <button
                         onClick={openProfile}
                         className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-display font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(0,168,255,0.3)]"
                       >
-                        <ExternalLink className="w-4 h-4" /> LINK ACCOUNT TO UNLOCK
+                        <ExternalLink className="w-4 h-4" /> LINK DISCORD TO UNLOCK
                       </button>
                     ) : isFree && lock === "BOOSTER" ? (
                       <a
@@ -601,7 +601,7 @@ export const StoreSection: React.FC = () => {
               {/* Detailed Breakdown List */}
               <div className="bg-[#07090e] p-4 rounded-xl border border-white/5 mb-6">
                 <h4 className="font-mono text-xs uppercase text-zinc-400 mb-3 font-bold">
-                  قائمة الموارد والأسلحة بالتفصيل:
+                  Full item breakdown:
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
                   {(inspectKit.Items || []).map((it, idx) => (
@@ -639,13 +639,13 @@ export const StoreSection: React.FC = () => {
                   }}
                   className="flex-1 py-3.5 rounded-xl bg-[#e62020] hover:bg-[#ff2b2b] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(230,32,32,0.4)] transition-all"
                 >
-                  <MessageSquare className="w-4 h-4" /> طلب وشراء الكيت عبر الديسكورد
+                  <MessageSquare className="w-4 h-4" /> BUY VIA DISCORD TICKET
                 </button>
                 <button
                   onClick={() => setInspectKit(null)}
                   className="px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-mono text-xs uppercase transition-colors"
                 >
-                  إغلاق
+                  Close
                 </button>
               </div>
             </div>
@@ -719,7 +719,7 @@ export const StoreSection: React.FC = () => {
                 ) : (
                   <div className="flex items-center justify-between bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                     <span className="font-mono text-xs text-amber-300">
-                      سجل دخولك بحساب ستيم ليتم نسخ الـ SteamID الخاص بك تلقائياً.
+                      Login with Steam to auto-fill your SteamID64.
                     </span>
                     <button
                       onClick={loginWithSteam}
@@ -738,7 +738,7 @@ export const StoreSection: React.FC = () => {
                     1
                   </span>
                   <p className="text-xs text-zinc-300 leading-relaxed">
-                    اضغط على <strong className="text-white">"OPEN DISCORD TICKET"</strong> للتوجه لسيرفر الديسكورد وفتح تذكرة في روم <strong className="text-yellow-400">#store-tickets</strong>.
+                    Click <strong className="text-white">"OPEN DISCORD TICKET"</strong> to join our Discord server and open a ticket in <strong className="text-yellow-400">#store-tickets</strong>.
                   </p>
                 </div>
 
@@ -747,7 +747,7 @@ export const StoreSection: React.FC = () => {
                     2
                   </span>
                   <p className="text-xs text-zinc-300 leading-relaxed">
-                    أرسل الـ <strong className="text-white">SteamID64</strong> الخاص بك وحدد طريقة الدفع (PayPal, بطاقات, كريبتو).
+                    Send your <strong className="text-white">SteamID64</strong> and choose your payment method (PayPal, card, or crypto).
                   </p>
                 </div>
 
@@ -756,7 +756,7 @@ export const StoreSection: React.FC = () => {
                     3
                   </span>
                   <p className="text-xs text-zinc-300 leading-relaxed">
-                    بمجرد اكتمال العملية، يعطيك المشرف الرتبة في الديسكورد ويتم تفعيل الكيت فوراً في السيرفر عبر RCON تلقائياً!
+                    Once payment is confirmed, an admin grants your Discord role and your kit is activated on the server instantly via RCON!
                   </p>
                 </div>
               </div>
