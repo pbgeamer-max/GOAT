@@ -231,20 +231,27 @@ export function updateBoosterStatus(steam_id, isBooster = 1) {
  * Grant VIP Subscription & HQ Building Privileges (30 Days)
  */
 export function grantVipSubscription(steam_id, tier = "vip", durationDays = 30, discord_id = null) {
+  const cleanId = String(steam_id).trim();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
-  if (memCache.users[steam_id]) {
-    memCache.users[steam_id].is_vip = true;
-    memCache.users[steam_id].vip_tier = tier.toLowerCase();
-    memCache.users[steam_id].vip_started_at = now.toISOString();
-    memCache.users[steam_id].vip_expires_at = expiresAt;
-    memCache.users[steam_id].vip_has_hq = true;
+  if (memCache.users[cleanId]) {
+    memCache.users[cleanId].is_vip = true;
+    memCache.users[cleanId].vip_tier = tier.toLowerCase();
+    memCache.users[cleanId].vip_started_at = now.toISOString();
+    memCache.users[cleanId].vip_expires_at = expiresAt;
+    memCache.users[cleanId].vip_has_hq = true;
+    memCache.users[cleanId].vip = {
+      active: true,
+      tier: String(tier).toLowerCase(),
+      granted_at: now.toISOString(),
+      expires_at: expiresAt,
+    };
     if (discord_id) {
-      memCache.users[steam_id].discord_id = discord_id;
-      memCache.discordMap[discord_id] = steam_id;
+      memCache.users[cleanId].discord_id = discord_id;
+      memCache.discordMap[discord_id] = cleanId;
     }
-    memCache.users[steam_id].updated_at = now.toISOString();
+    memCache.users[cleanId].updated_at = now.toISOString();
   }
 
   const payload = {
@@ -253,29 +260,41 @@ export function grantVipSubscription(steam_id, tier = "vip", durationDays = 30, 
     vip_started_at: now.toISOString(),
     vip_expires_at: expiresAt,
     vip_has_hq: true,
+    vip: {
+      active: true,
+      tier: String(tier).toLowerCase(),
+      granted_at: now.toISOString(),
+      expires_at: expiresAt,
+    },
     updated_at: now.toISOString(),
   };
   if (discord_id) payload.discord_id = discord_id;
 
   if (isFirebaseActive && firestore) {
-    firestore.collection("users").doc(steam_id).set(payload, { merge: true }).catch(() => {});
+    firestore.collection("users").doc(cleanId).set(payload, { merge: true }).catch(() => {});
   } else {
     saveLocalBackup();
   }
 
-  return { steam_id, tier, expiresAt };
+  return { steam_id: cleanId, tier, expiresAt };
 }
 
 /**
  * Revoke VIP Subscription & HQ privileges upon 30-day expiration
  */
 export function revokeVipSubscription(steam_id) {
+  const cleanId = String(steam_id).trim();
   const now = new Date().toISOString();
-  if (memCache.users[steam_id]) {
-    memCache.users[steam_id].is_vip = false;
-    memCache.users[steam_id].vip_tier = null;
-    memCache.users[steam_id].vip_has_hq = false;
-    memCache.users[steam_id].updated_at = now;
+  if (memCache.users[cleanId]) {
+    memCache.users[cleanId].is_vip = false;
+    memCache.users[cleanId].vip_tier = null;
+    memCache.users[cleanId].vip_has_hq = false;
+    memCache.users[cleanId].vip_expired_at = now;
+    if (memCache.users[cleanId].vip) {
+      memCache.users[cleanId].vip.active = false;
+      memCache.users[cleanId].vip.revoked_at = now;
+    }
+    memCache.users[cleanId].updated_at = now;
   }
 
   const payload = {
@@ -283,11 +302,12 @@ export function revokeVipSubscription(steam_id) {
     vip_tier: null,
     vip_has_hq: false,
     vip_expired_at: now,
+    "vip.active": false,
     updated_at: now,
   };
 
   if (isFirebaseActive && firestore) {
-    firestore.collection("users").doc(steam_id).set(payload, { merge: true }).catch(() => {});
+    firestore.collection("users").doc(cleanId).set(payload, { merge: true }).catch(() => {});
   } else {
     saveLocalBackup();
   }
@@ -299,8 +319,10 @@ export function revokeVipSubscription(steam_id) {
 export function getExpiredVips() {
   const now = Date.now();
   return Object.values(memCache.users).filter((u) => {
-    if (!u.is_vip || !u.vip_expires_at) return false;
-    const exp = new Date(u.vip_expires_at).getTime();
+    const expiresAt = u.vip_expires_at || u.vip?.expires_at;
+    const isVip = u.is_vip || u.vip?.active;
+    if (!isVip || !expiresAt) return false;
+    const exp = new Date(expiresAt).getTime();
     return exp <= now;
   });
 }
@@ -522,58 +544,3 @@ export function incrementPlayerStats(steam_id, deltas = {}, playerName = null) {
   }
 }
 
-export function grantVipSubscription(steamId, tier = "vip", days = 30) {
-  const cleanId = String(steamId).trim();
-  const user = memCache.users[cleanId];
-  if (!user) return;
-
-  const now = new Date().toISOString();
-  const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
-
-  user.vip = {
-    active: true,
-    tier: String(tier).toLowerCase(),
-    granted_at: now,
-    expires_at: expiresAt,
-  };
-
-  if (isFirebaseActive && firestore) {
-    firestore.collection("users").doc(cleanId).set({
-      vip: user.vip,
-      updated_at: now,
-    }, { merge: true }).catch(() => {});
-  } else {
-    saveLocalBackup();
-  }
-}
-
-export function revokeVipSubscription(steamId, tier = "vip") {
-  const cleanId = String(steamId).trim();
-  const user = memCache.users[cleanId];
-  if (!user || !user.vip) return;
-
-  user.vip.active = false;
-  user.vip.revoked_at = new Date().toISOString();
-
-  if (isFirebaseActive && firestore) {
-    firestore.collection("users").doc(cleanId).set({
-      vip: user.vip,
-      updated_at: new Date().toISOString(),
-    }, { merge: true }).catch(() => {});
-  } else {
-    saveLocalBackup();
-  }
-}
-
-export function getExpiredVips() {
-  const now = Date.now();
-  const expired = [];
-  for (const user of Object.values(memCache.users)) {
-    if (user.vip && user.vip.active && user.vip.expires_at) {
-      if (new Date(user.vip.expires_at).getTime() <= now) {
-        expired.push(user);
-      }
-    }
-  }
-  return expired;
-}
